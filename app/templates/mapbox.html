@@ -189,7 +189,10 @@
       <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
       
       <p><strong>Predicted Class:</strong> ${props.predicted_class || "Unknown"}</p>
-      <p><strong>Probabilities:</strong> ${Array.isArray(props.probabilities) ? props.probabilities.join(", ") : "N/A"}</p>
+      <p><strong>narrowleaf_cattail_prob:</strong> ${result.narrowleaf_cattail_prob|| "N/A"}</p>
+                        <p><strong>none_prob:</strong> ${result.none_prob|| "N/A"}</p>
+                        <p><strong>phragmites_prob:</strong> ${result.phragmites_prob|| "N/A"}</p>
+                        <p><strong>purple_loosestrife_prob:</strong> ${result.purple_loosestrife_prob|| "N/A"}</p>
       <img src="/getImage/${props.file_id}" 
      alt="${props.filename}" 
      style="max-width: 200px; height: auto; display: block; margin: 10px auto; border-radius: 5px; cursor: pointer;" 

@@ -53,62 +53,213 @@
             display: none;
             margin-top: 10px;
         }
+        /*For the inference results*/
+        #results {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 4 columns */
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.result-item {
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #f9f9f9;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.result-item img {
+    width: 100%; 
+    max-width: 200px;
+    height: auto;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+    #results {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for smaller screens */
+    }
+}
+
+@media (max-width: 600px) {
+    #results {
+        grid-template-columns: repeat(1, 1fr); /* 1 column on mobile */
+    }
+}
+/*For the uploaded images*/
+#preview {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 columns */
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.preview-item {
+    text-align: center;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.preview-item img {
+    width: 100%;
+    max-width: 150px;
+    height: auto;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+@media (max-width: 1200px) {
+    #preview {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns for medium screens */
+    }
+}
+
+@media (max-width: 768px) {
+    #preview {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for smaller screens */
+    }
+}
+
+@media (max-width: 500px) {
+    #preview {
+        grid-template-columns: repeat(1, 1fr); /* 1 column for mobile */
+    }
+}
+/* Sidebar Navigation */
+.sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #333;
+    padding-top: 20px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar h2 {
+    text-align: center;
+}
+
+.sidebar button {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 16px;
+    border: none;
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.sidebar button:hover {
+    background-color: #777;
+}
+
+/* Main Content Adjustments */
+.main-content {
+    margin-left: 270px;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    .main-content {
+        margin-left: 220px;
+    }
+}
+
     </style>
 </head>
 <body>
-    <h1>Run Inference on Images</h1>
 
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="file" multiple onchange="previewFiles()">
-        <button type="button" onclick="selectAllFiles()">Select All Files</button>
-        <div id="preview"></div>
-        <button type="submit">Run Inference</button>
-    </form>
-
-    <div id="results"></div>
-    <button id="saveAllButton" onclick="saveResults()">Save Selected to Database</button>
-
-    <div id="imageModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <img id="modalImage" class="preview-image">
-            <div>
-                <button onclick="zoomIn()">Zoom In</button>
-                <button onclick="zoomOut()">Zoom Out</button>
-            </div>
-        </div>
+    <div class="sidebar">
+        <h2>Menu</h2>
+        <button onclick="document.getElementById('fileInput').click()">Choose Files</button>
+        <input type="file" id="fileInput" name="file" multiple onchange="previewFiles()" style="display: none;">
+        <button onclick="selectAllFiles()">Select All Files</button>
+        <button id="runInferenceButton">Run Inference</button>
+        <button id="saveAllButton" onclick="saveResults()">Save Selected to Database</button>
     </div>
+
+    <div class="main-content">
+        <h1>Run Inference on Images</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div id="preview"></div>
+        </form>
+
+        <div id="results"></div>
+    </div>
+
+    <div id="imageModal" class="modal"></div>
 
     <script>
         let inferenceResults = []; // Store inference results globally
 
         function previewFiles() {
-            let preview = document.getElementById('preview');
-            let files = document.querySelector('input[type=file]').files;
-            preview.innerHTML = '';
+    let preview = document.getElementById('preview');
+    let files = document.querySelector('input[type=file]').files;
+    preview.innerHTML = '';
 
-            Array.from(files).forEach(file => {
-                if (/\.(jpe?g|png|gif)$/i.test(file.name)) {
-                    let reader = new FileReader();
-                    reader.onload = function (e) {
-                        let div = document.createElement('div');
-                        div.innerHTML = `
-                            <img src="${e.target.result}" onclick="showPreview('${e.target.result}')">
-                            <p>${file.name}</p>
-                        `;
-                        preview.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
+    Array.from(files).forEach(file => {
+        if (/\.(jpe?g|png|gif)$/i.test(file.name)) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                let div = document.createElement('div');
+                div.className = "preview-item";
+                div.innerHTML = `
+                    <img src="${e.target.result}" onclick="showPreview('${e.target.result}')">
+                    <p>${file.name}</p>
+                `;
+                preview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
         }
+    });
+}
 
-        function showPreview(src) {
-            let modal = document.getElementById("imageModal");
-            let modalImg = document.getElementById("modalImage");
-            modal.style.display = "block";
-            modalImg.src = src;
-        }
+
+        function showPreview(imageUrl) {
+    const modal = document.createElement("div");
+    modal.style.position = "fixed";
+    modal.style.top = "0";
+    modal.style.left = "0";
+    modal.style.width = "100%";
+    modal.style.height = "100%";
+    modal.style.background = "rgba(0, 0, 0, 0.9)";
+    modal.style.display = "flex";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.zIndex = "1000";
+
+    const img = document.createElement("img");
+    img.src = imageUrl;
+    img.style.width = "90vw"; 
+    img.style.height = "90vh"; 
+    img.style.objectFit = "contain"; 
+    img.style.border = "5px solid white";
+    img.style.borderRadius = "8px";
+    img.style.cursor = "pointer";
+
+    modal.appendChild(img);
+    document.body.appendChild(modal);
+
+    modal.onclick = function () {
+        document.body.removeChild(modal);
+    };
+}
+
 
         function closeModal() {
             document.getElementById("imageModal").style.display = "none";
@@ -128,42 +279,73 @@
             document.querySelectorAll(".save-checkbox").forEach(cb => cb.checked = true);
         }
 
-        async function runInference(event) {
-            event.preventDefault();
-            let formData = new FormData(document.getElementById("uploadForm"));
+        async function runInference() {
+    let formData = new FormData();
+    let files = document.getElementById("fileInput").files;
 
-            let response = await fetch("/runInferenceTest", {
-                method: "POST",
-                body: formData
-            });
+    if (files.length === 0) {
+        alert("No files selected. Please choose images first.");
+        return;
+    }
 
-            let data = await response.json();
-            let resultContainer = document.getElementById("results");
+    for (let i = 0; i < files.length; i++) {
+        formData.append("file", files[i]);  // Append files correctly
+    }
 
-            if (data.error) {
-                resultContainer.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-                return;
-            }
+    try {
+        let response = await fetch("/runInferenceTest", {
+            method: "POST",
+            body: formData
+        });
 
-            inferenceResults = data.results; // Store for later saving
-            resultContainer.innerHTML = `<h3>Inference Results</h3>`;
-            resultContainer.innerHTML += `<p><strong>Total Processing Time:</strong> ${data.elapsed_time} seconds</p>`;
-
-            data.results.forEach((result, index) => {
-                resultContainer.innerHTML += `
-                    <div class="result-item">
-                        <input type="checkbox" class="save-checkbox" value="${index}">
-                        <p><strong>Filename:</strong> ${result.filename}</p>
-                        <p><strong>Predicted Class:</strong> ${result.predicted_class}</p>
-                        <p><strong>Probability Distribution:</strong> ${result.probabilities.join(", ")}</p>
-                        <img src="/getImage/${result.file_id}" onclick="showPreview('/getImage/${result.file_id}')">
-                    </div>
-                `;
-            });
-
-            document.getElementById("saveAllButton").style.display = "block"; // Show save button
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
         }
 
+        let data = await response.json();
+        let resultContainer = document.getElementById("results");
+        resultContainer.innerHTML = `<h3>Inference Results</h3>`;
+
+        if (data.error) {
+            resultContainer.innerHTML += `<p style="color: red;">Error: ${data.error}</p>`;
+            return;
+        }
+
+        inferenceResults = data.results;
+        resultContainer.innerHTML += `<p><strong>Total Processing Time:</strong> ${data.elapsed_time} seconds</p>`;
+
+    let gridHTML = "";
+    data.results.forEach((result, index) => {
+        gridHTML += `
+            <div class="result-item">
+                        <input type="checkbox" class="save-checkbox" value="${index|| "N/A"}">
+                        <p><strong>Total Processing Time:</strong> ${data.elapsed_time} seconds</p>
+                        <p><strong>Filename:</strong> ${result.filename|| "N/A"}</p>
+                        <p><strong>Predicted Class:</strong> ${result.predicted_class|| "N/A"}</p>
+                        <p><strong>narrowleaf_cattail_prob:</strong> ${result.narrowleaf_cattail_prob|| "N/A"}</p>
+                        <p><strong>none_prob:</strong> ${result.none_prob|| "N/A"}</p>
+                        <p><strong>phragmites_prob:</strong> ${result.phragmites_prob|| "N/A"}</p>
+                        <p><strong>purple_loosestrife_prob:</strong> ${result.purple_loosestrife_prob|| "N/A"}</p>
+                        <img src="/getImage/${result.file_id}" alt="Inference Image" onclick="showPreview('/getImage/${result.file_id}')">
+                    </div>
+        `;
+    });
+
+    resultContainer.innerHTML += `<div id="results">${gridHTML}</div>`;
+        document.getElementById("saveAllButton").style.display = "block";
+
+    } catch (error) {
+        console.error("Error during inference:", error);
+        alert("Failed to run inference. Check console for details.");
+    }
+}
+
+/*
+"narrowleaf_cattail_prob": properties.get("narrowleaf_cattail_prob"),
+                "none_prob": properties.get("none_prob"),
+                "phragmites_prob": properties.get("phragmites_prob"),
+                "purple_loosestrife_prob": properties.get("purple_loosestrife_prob"),
+*/
         async function saveResults() {
             let selectedIndexes = [...document.querySelectorAll(".save-checkbox:checked")].map(cb => cb.value);
             let selectedResults = selectedIndexes.map(i => inferenceResults[i]);
@@ -179,6 +361,11 @@
         }
 
         document.getElementById("uploadForm").onsubmit = runInference;
+    document.getElementById("runInferenceButton").addEventListener("click", function(event) {
+    event.preventDefault();
+    runInference();
+});
+
     </script>
 </body>
 </html>
