@@ -186,6 +186,7 @@
 
     <div class="sidebar">
         <h2>Menu</h2>
+        <button onclick="location.href='/'">Back to map</button>
         <button onclick="document.getElementById('fileInput').click()">Choose Files</button>
         <input type="file" id="fileInput" name="file" multiple onchange="previewFiles()" style="display: none;">
         <button onclick="selectAllFiles()">Select All Files</button>
@@ -293,7 +294,7 @@
     }
 
     try {
-        let response = await fetch("/runInferenceTest", {
+        let response = await fetch("/runInference", {
             method: "POST",
             body: formData
         });
@@ -318,7 +319,7 @@
     data.results.forEach((result, index) => {
         gridHTML += `
             <div class="result-item">
-                        <input type="checkbox" class="save-checkbox" value="${index|| "N/A"}">
+                        <input type="checkbox" class="save-checkbox" value="${index}">
                         <p><strong>Total Processing Time:</strong> ${data.elapsed_time} seconds</p>
                         <p><strong>Filename:</strong> ${result.filename|| "N/A"}</p>
                         <p><strong>Predicted Class:</strong> ${result.predicted_class|| "N/A"}</p>
@@ -346,19 +347,42 @@
                 "phragmites_prob": properties.get("phragmites_prob"),
                 "purple_loosestrife_prob": properties.get("purple_loosestrife_prob"),
 */
-        async function saveResults() {
-            let selectedIndexes = [...document.querySelectorAll(".save-checkbox:checked")].map(cb => cb.value);
-            let selectedResults = selectedIndexes.map(i => inferenceResults[i]);
+async function saveResults() {
+    let selectedIndexes = [...document.querySelectorAll(".save-checkbox:checked")].map(cb => parseInt(cb.value));
+    
+    if (selectedIndexes.length === 0) {
+        alert("No images selected. Please select images before saving.");
+        return;
+    }
 
-            let response = await fetch("/saveResults", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ results: selectedResults })
-            });
+    let selectedResults = selectedIndexes.map(i => inferenceResults[i]);
+    
+    if (selectedResults.length === 0) {
+        alert("No valid results found. Ensure inference was run successfully.");
+        return;
+    }
 
-            let data = await response.json();
-            alert(data.message);
+    console.log("Saving results:", selectedResults);  // Debugging log
+
+    try {
+        let response = await fetch("/saveResults", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ results: selectedResults })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
         }
+
+        let data = await response.json();
+        alert("Successfully saved to database: " + data.message);
+    } catch (error) {
+        console.error("Error saving results:", error);
+        alert("Failed to save results. Check console for details.");
+    }
+}
+
 
         document.getElementById("uploadForm").onsubmit = runInference;
     document.getElementById("runInferenceButton").addEventListener("click", function(event) {

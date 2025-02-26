@@ -162,7 +162,7 @@ def get_image(file_id):
 
 
 
-@bp.route("/runInferenceTest", methods=["GET", "POST"])
+@bp.route("/runInference", methods=["GET", "POST"])
 def run_inference():
     if request.method == "GET":
         return render_template("runInference.html")
@@ -242,8 +242,23 @@ def save_results():
 
     for result in results:
         try:
+            # Ensure `result` is a valid dictionary
+            if not isinstance(result, dict):
+                logging.warning(f"Skipping invalid result entry: {result}")
+                continue  # Skip invalid entries
+
+            file_id = result.get("file_id")
+            if not file_id:
+                logging.warning(f"Skipping result due to missing file_id: {result}")
+                continue  # Skip this entry
+
             # Retrieve image file from MongoDB GridFS
-            retrieved_file = fs.get(ObjectId(result["file_id"]))  # Convert file_id to ObjectId
+            try:
+                retrieved_file = fs.get(ObjectId(file_id))
+            except Exception as e:
+                logging.error(f"File not found in MongoDB for file_id: {file_id}, Error: {e}")
+                continue  # Skip if file retrieval fails
+
             file_bytes = retrieved_file.read()
 
             # Extract EXIF metadata
@@ -252,54 +267,57 @@ def save_results():
 
             # Extract GPS data
             lat, lon = None, None
-            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
-                lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
-                lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
-                lat = lat - LATITUDE_OFFSET if lat is not None else None
-                lon = lon - LONGITUDE_OFFSET if lon is not None else None
+            try:
+                if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
+                    lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
+                    lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
+                    lat = lat - LATITUDE_OFFSET if lat is not None else None
+                    lon = lon - LONGITUDE_OFFSET if lon is not None else None
+            except Exception as e:
+                logging.error(f"GPS extraction failed for file_id {file_id}: {e}")
 
             # Extract image direction (yaw) if available
             yaw = "Unknown"
-            if 'GPS GPSImgDirection' in tags:
-                try:
+            try:
+                if 'GPS GPSImgDirection' in tags:
                     direction = tags['GPS GPSImgDirection'].values[0]
                     yaw = float(direction.num) / float(direction.den)
-                except Exception:
-                    yaw = "Unknown"
+            except Exception:
+                yaw = "Unknown"
 
             # Extract altitude (meters) if available
             altitude_meters = None
-            if 'GPS GPSAltitude' in tags:
-                try:
+            try:
+                if 'GPS GPSAltitude' in tags:
                     altitude = tags['GPS GPSAltitude'].values[0]
                     altitude_meters = float(altitude.num) / float(altitude.den)
-                except Exception:
-                    altitude_meters = None
+            except Exception:
+                altitude_meters = None
+
+            # Ensure geometry is valid
+            geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
 
             # Create GeoJSON formatted result
             geojson_results.append({
                 "type": "Feature",
                 "properties": {
-                    "filename": result["filename"],
-                    "predicted_class": result["predicted_class"],
-                    "narrowleaf_cattail_prob": result["narrowleaf_cattail_prob"],
-                    "none_prob": result["none_prob"],
-                    "phragmites_prob": result["phragmites_prob"],
-                    "purple_loosestrife_prob": result["purple_loosestrife_prob"],
-                    "file_id": result["file_id"],
+                    "filename": result.get("filename", "Unknown"),
+                    "predicted_class": result.get("predicted_class", "Unknown"),
+                    "narrowleaf_cattail_prob": result.get("narrowleaf_cattail_prob", 0),
+                    "none_prob": result.get("none_prob", 0),
+                    "phragmites_prob": result.get("phragmites_prob", 0),
+                    "purple_loosestrife_prob": result.get("purple_loosestrife_prob", 0),
+                    "file_id": file_id,
                     "lat": lat,
                     "lon": lon,
                     "yaw": yaw,
                     "msl_alt": altitude_meters,
                 },
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [lon, lat] if lat is not None and lon is not None else None
-                }
+                "geometry": geometry
             })
 
         except Exception as e:
-            logging.error(f"Error processing file {result['file_id']}: {e}")
+            logging.error(f"Unexpected error processing file (file_id unknown): {e}")
 
     # Save results in MongoDB
     if geojson_results:

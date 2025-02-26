@@ -12,7 +12,12 @@
 
   <style>
     body { margin: 0; padding: 0; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    /*#map { position: absolute; top: 0; bottom: 0; width: 100%; }*/
+    /* Wrap map in .main-content; remove absolute positioning to accommodate sidebar */
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
     .marker {
       background-image: url('/static/free-plant-icon-for-marker.png');
       background-size: cover;
@@ -25,7 +30,7 @@
       text-align: center;
       font-family: 'Open Sans', sans-serif;
     }
-    .controls {
+    /* .controls {
       position: absolute;
       top: 10px;
       left: 10px;
@@ -34,6 +39,53 @@
       padding: 10px;
       border-radius: 4px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    } */
+    .sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #333;
+    padding-top: 20px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar h2 {
+    text-align: center;
+}
+
+.sidebar button {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 16px;
+    border: none;
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.sidebar button:hover {
+    background-color: #777;
+}
+
+/* Main Content Adjustments */
+.main-content {
+    margin-left: 270px;
+    padding: 20px;
+}
+
+
+
+    /* Main Content Adjustments */
+    .main-content {
+      margin-left: 270px;
+      padding: 10px;
     }
     .controls button {
       margin: 2px;
@@ -48,10 +100,18 @@
       padding: 5px 10px;
       border-radius: 4px;
     }
+    @media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    .main-content {
+        margin-left: 220px;
+    }
+}
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <!-- <div id="map"></div>
   <div class="controls">
     <div>
       <button onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
@@ -67,8 +127,23 @@
     <div>
       <button onclick="location.href='/runInferenceTest'">Running Inference Test</button>
     </div>
-  </div>
-
+  </div> -->
+<!-- Sidebar (same style as runInference page) -->
+  <div class="sidebar">
+      <h2>Menu</h2>
+      <button onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
+      <button onclick="setMapStyle('mapbox://styles/mapbox/light-v10')">Light</button>
+      <button onclick="setMapStyle('mapbox://styles/mapbox/dark-v10')">Dark</button>
+      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-v9')">Satellite</button>
+      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-streets-v11')">Satellite Streets</button>
+      <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
+      <button onclick="location.href='/runInference'">Run Inference</button>
+    </div>
+   
+    <!-- Main Content with map -->
+    <div class="main-content">
+      <div id="map"></div>
+    </div>
   <script>
     const mapboxToken = "{{ mapbox_token }}";
     mapboxgl.accessToken = mapboxToken;
@@ -183,16 +258,16 @@
 
     const coordinates = e.features[0].geometry.coordinates.slice();
     const props = e.features[0].properties;
+    // Extract the array [lon, lat]
+    const [lon, lat] = e.features[0].geometry.coordinates;
 
     let popupContent = `<h3>${props.filename || "No Filename"}</h3>
-      <p><strong>Latitude, Longitude:</strong> ${props.lat || "N/A"}, ${props.lon || "N/A"}</p>
-      <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
-      
+      <p><strong>Latitude, Longitude:</strong> ${lat}, ${lon}</p>
       <p><strong>Predicted Class:</strong> ${props.predicted_class || "Unknown"}</p>
-      <p><strong>narrowleaf_cattail_prob:</strong> ${result.narrowleaf_cattail_prob|| "N/A"}</p>
-                        <p><strong>none_prob:</strong> ${result.none_prob|| "N/A"}</p>
-                        <p><strong>phragmites_prob:</strong> ${result.phragmites_prob|| "N/A"}</p>
-                        <p><strong>purple_loosestrife_prob:</strong> ${result.purple_loosestrife_prob|| "N/A"}</p>
+      <p><strong>narrowleaf_cattail_prob:</strong> ${props.narrowleaf_cattail_prob|| "0"}</p>
+      <p><strong>none_prob:</strong> ${props.none_prob|| "0"}</p>
+      <p><strong>phragmites_prob:</strong> ${props.phragmites_prob|| "0"}</p>
+      <p><strong>purple_loosestrife_prob:</strong> ${props.purple_loosestrife_prob|| "0"}</p>
       <img src="/getImage/${props.file_id}" 
      alt="${props.filename}" 
      style="max-width: 200px; height: auto; display: block; margin: 10px auto; border-radius: 5px; cursor: pointer;" 
@@ -200,6 +275,7 @@
 
       `;
 //add into popupcontent if you want
+// <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
     //<p><strong>Yaw:</strong> ${props.yaw ? props.yaw + "°" : "N/A"}</p>
     new mapboxgl.Popup()
         .setLngLat(coordinates)
