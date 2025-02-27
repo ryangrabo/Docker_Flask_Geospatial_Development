@@ -1,3 +1,11 @@
+# App for Final Deplyoment System for Senior Design Project
+## Classifying Invasive Species Using Drone Images and Deep Learning
+
+## Create venv
+```bash
+python3 -m venv venv
+```
+
 ```bash
 venv\Scripts\activate    
 ```
