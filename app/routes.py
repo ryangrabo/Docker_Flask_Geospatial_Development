@@ -154,8 +154,11 @@ def get_image(file_id):
 
         # Retrieve the image from GridFS
         retrieved_file = fs.get(file_object_id)
-
-        return send_file(BytesIO(retrieved_file.read()), mimetype="image/jpeg")
+        scale_factor = 0.75 # e.g., reduce to 50%
+        new_width = int(retrieved_file.shape[1] * scale_factor)
+        new_height = int(retrieved_file.shape[0] * scale_factor)
+        resized_image = cv2.resize(retrieved_file, (new_width, new_height))
+        return send_file(BytesIO(resized_image), mimetype="image/jpeg")
 
     except Exception as e:
         return jsonify({"error": f"Image not found: {str(e)}"}), 404
