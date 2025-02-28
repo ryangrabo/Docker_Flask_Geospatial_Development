@@ -202,7 +202,7 @@ def run_inference():
             
             
             # Run YOLO inference
-            results = model.predict(image_data, stream=True)
+            results = model.predict(image_data, stream=True) #can set verbose to false if we don't want it to print info in the console
 
             for result in results:
                 top_index = result.probs.top1  # Get top prediction index
