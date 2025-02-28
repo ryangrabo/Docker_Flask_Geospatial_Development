@@ -214,10 +214,10 @@ def run_inference():
                     "total_inference_time": total_inference,
                     "filename": filename,
                     "predicted_class": top_class,
-                    "narrowleaf_cattail_prob": round(probabilities[0], 4),
-                    "none_prob": round(probabilities[1], 4),
-                    "phragmites_prob": round(probabilities[2], 4),
-                    "purple_loosestrife_prob": round(probabilities[3], 4),
+                    "narrowleaf_cattail_prob": probabilities[0],
+                    "none_prob": probabilities[1],
+                    "phragmites_prob": probabilities[2],
+                    "purple_loosestrife_prob": probabilities[3],
                     "top_index": top_index,
                     "file_id": str(file_id)  # Store MongoDB file ID
                 })
