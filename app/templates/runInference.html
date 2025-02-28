@@ -320,7 +320,7 @@
         gridHTML += `
             <div class="result-item">
                         <input type="checkbox" class="save-checkbox" value="${index}">
-                        <p><strong>Total Processing Time:</strong> ${data.elapsed_time} seconds</p>
+                        <p><strong>Total Inference Time:</strong> ${result.total_inference_time.toFixed(4)} m-seconds</p>
                         <p><strong>Filename:</strong> ${result.filename|| "N/A"}</p>
                         <p><strong>Predicted Class:</strong> ${result.predicted_class|| "N/A"}</p>
                         <p><strong>narrowleaf_cattail_prob:</strong> ${result.narrowleaf_cattail_prob|| "N/A"}</p>
