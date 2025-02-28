@@ -154,26 +154,10 @@ def get_image(file_id):
 
         # Retrieve the image from GridFS
         retrieved_file = fs.get(file_object_id)
-       # Convert to a NumPy array
-        np_array = np.frombuffer(retrieved_file, np.uint8)
-
-        # Decode image from the array
-        image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
-
-        # Resize the image
-        scale_factor = 0.75
-        new_width = int(image.shape[1] * scale_factor)
-        new_height = int(image.shape[0] * scale_factor)
-        resized_image = cv2.resize(image, (new_width, new_height))
-
-        # Encode the resized image to bytes
-        _, buffer = cv2.imencode('.jpg', resized_image)
-
-        # Return image as a response
-        return send_file(
-            BytesIO(buffer.tobytes()),
-            mimetype="image/jpeg"
-        )
+        width = 300
+        height = 200
+        resized_image = cv2.resize(retrieved_file.read(), (width, height))
+        return send_file(BytesIO(resized_image), mimetype="image/jpeg")
 
     except Exception as e:
         return jsonify({"error": f"Image not found: {str(e)}"}), 404
