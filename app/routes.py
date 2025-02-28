@@ -15,7 +15,6 @@ import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
 #TODO Add functionality to print message to user if they try to upload file type that isn't .jpg
-#TODO change the way that results and elapsed time is calculated so that it can actually store the processing time for each image
 #TODO (not sure if this is done here) need to send lower resolution images of the image back to user UNLESS they click on it to make it bigger, website has very high RAM usage
 
 bp = Blueprint("main", __name__)
