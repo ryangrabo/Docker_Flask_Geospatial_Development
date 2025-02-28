@@ -202,14 +202,16 @@ def run_inference():
             
             
             # Run YOLO inference
-            results = model.predict(image_data, stream=True) #can set verbose to false if we don't want it to print info in the console
+            results = model.predict(image_data, stream=True, verbose=False) #can set verbose to false if we don't want it to print info in the console
 
             for result in results:
                 top_index = result.probs.top1  # Get top prediction index
                 top_class = result.names[top_index]  # Get class name
                 probabilities = result.probs.data.tolist()  # Get probabilities
+                total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
 
                 results_list.append({
+                    "total_inference_time": total_inference,
                     "filename": filename,
                     "predicted_class": top_class,
                     "narrowleaf_cattail_prob": round(probabilities[0], 4),
@@ -305,6 +307,7 @@ def save_results():
                 "properties": {
                     "filename": result.get("filename", "Unknown"),
                     "predicted_class": result.get("predicted_class", "Unknown"),
+                    #"total_inference_time": result.get("total_inference_time", 0),
                     "narrowleaf_cattail_prob": result.get("narrowleaf_cattail_prob", 0),
                     "none_prob": result.get("none_prob", 0),
                     "phragmites_prob": result.get("phragmites_prob", 0),
