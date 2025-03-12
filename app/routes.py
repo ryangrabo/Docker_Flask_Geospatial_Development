@@ -19,8 +19,6 @@ import gridfs  # storing and retrieving the images in MongoDB
 
 bp = Blueprint("main", __name__)
 
-
-
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
@@ -32,10 +30,6 @@ client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
 
-# Local/OneDrive folder for uploads:
-UPLOAD_FOLDER = r"C:\Users\frost\OneDrive - The Pennsylvania State University\2024_drone_images\purple_loosestrife\07-17-2024"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
 # Offsets for drone error:
@@ -44,7 +38,6 @@ LONGITUDE_OFFSET = 0.00
 AGL_OFFSET_FEET = -10  # Adjust to make AGL values ~20 feet
 
 logging.basicConfig(level=logging.INFO)
-
 
 def connect_to_mongodb():
     """Connects to MongoDB and returns a client."""
@@ -330,6 +323,32 @@ def save_results():
 
     return jsonify({"error": "No valid results to save"}), 400
 
+@bp.route("/deleteNonSelectedResults", methods=["POST"])
+def delete_non_selected_results():
+    """
+    Deletes images from MongoDB GridFS and collection that were not selected by the user.
+    """
+    try:
+        data = request.json
+        unselected_ids = data.get("ids", [])
+
+        if not unselected_ids:
+            return jsonify({"message": "No images to delete"}), 200
+
+        # Delete images from GridFS
+        for image_id in unselected_ids:
+            try:
+                fs.delete(ObjectId(image_id))  # Delete from GridFS
+            except Exception as e:
+                print(f"Error deleting image {image_id}: {str(e)}")
+
+        # Delete documents from the collection
+        db[COLLECTION_NAME].delete_many({"properties.file_id": {"$in": unselected_ids}})
+
+        return jsonify({"message": f"Deleted {len(unselected_ids)} unselected images"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @bp.route("/test-image")

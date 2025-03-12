@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Run Inference on Images</title>
     <style>
+        body {
+    font-family: Arial, sans-serif;
+}
+
         img {
             width: 150px;
             height: 150px;
@@ -344,22 +348,29 @@ async function previewFiles() {
 
 async function saveResults() {
     let selectedIndexes = [...document.querySelectorAll(".save-checkbox:checked")].map(cb => parseInt(cb.value));
-    
+
     if (selectedIndexes.length === 0) {
         alert("No images selected. Please select images before saving.");
         return;
     }
 
     let selectedResults = selectedIndexes.map(i => inferenceResults[i]);
-    
+    let allIds = inferenceResults.map(result => result.file_id); // Get all image IDs
+    let selectedIds = selectedResults.map(result => result.file_id); // Get selected image IDs
+
+    // Find IDs that were NOT selected
+    let unselectedIds = allIds.filter(id => !selectedIds.includes(id));
+
     if (selectedResults.length === 0) {
         alert("No valid results found. Ensure inference was run successfully.");
         return;
     }
 
-    console.log("Saving results:", selectedResults);  // Debugging log
+    console.log("Saving results:", selectedResults);
+    console.log("Deleting unselected IDs:", unselectedIds);
 
     try {
+        // Save selected results
         let response = await fetch("/saveResults", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -372,15 +383,28 @@ async function saveResults() {
 
         let data = await response.json();
         alert("Successfully saved to database: " + data.message);
+
+        // Delete unselected results
+        if (unselectedIds.length > 0) {
+            await fetch("/deleteNonSelectedResults", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: unselectedIds })
+            });
+            console.log("Deleted unselected images successfully.");
+        }
+
     } catch (error) {
-        console.error("Error saving results:", error);
+        console.error("Error saving/deleting results:", error);
         alert("Failed to save results. Check console for details.");
     }
 }
 
 
-        document.getElementById("uploadForm").onsubmit = runInference;
-    document.getElementById("runInferenceButton").addEventListener("click", function(event) {
+
+document.getElementById("uploadForm").onsubmit = runInference;
+
+document.getElementById("runInferenceButton").addEventListener("click", function(event) {
     event.preventDefault();
     runInference();
 });
