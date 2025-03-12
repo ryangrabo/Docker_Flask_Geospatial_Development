@@ -206,6 +206,9 @@
         <button onclick="selectAllFiles()">Select All Files</button>
         <button id="runInferenceButton">Run Inference</button>
         <button id="saveAllButton" onclick="saveResults()">Save Selected to Database</button>
+        <h3>Run inference and save to database</h3>
+        <button id="processAndSaveButton">Process and Save</button>
+
         
     </div>
 
@@ -439,6 +442,64 @@ async function handleFiles(files) {
     }
   }
 }
+async function runInferenceAndSaveResults() {
+    let formData = new FormData();
+    let files = document.getElementById("fileInput").files;
+
+    if (files.length === 0) {
+        alert("No files selected. Please choose images first.");
+        return;
+    }
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append("file", files[i]);
+    }
+
+    try {
+        let response = await fetch("/runInference", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        let data = await response.json();
+
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+            return;
+        }
+
+        let inferenceResults = data.results;
+
+        if (inferenceResults.length === 0) {
+            alert("No valid results to save.");
+            return;
+        }
+
+        let saveResponse = await fetch("/saveResults", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ results: inferenceResults })
+        });
+
+        if (!saveResponse.ok) {
+            throw new Error(`Server error: ${saveResponse.statusText}`);
+        }
+
+        let saveData = await saveResponse.json();
+        alert("Successfully processed and saved: " + saveData.message);
+    } catch (error) {
+        console.error("Error processing images:", error);
+        alert("Failed to process images. Check console for details.");
+    }
+}
+document.getElementById("processAndSaveButton").addEventListener("click", function(event) {
+    event.preventDefault();
+    runInferenceAndSaveResults();
+});
 
     </script>
 </body>

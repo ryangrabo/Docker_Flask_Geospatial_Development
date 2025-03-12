@@ -107,7 +107,22 @@
     .main-content {
         margin-left: 220px;
     }
+    
 }
+#dropZone {
+    border: 2px dashed #ccc;
+    width: 100%;
+    min-height: 100px;
+    margin: 10px 0;
+    text-align: center;
+    line-height: 100px;
+    color: #aaa;
+    cursor: pointer;
+}
+#dropZone:hover {
+    background-color: #f0f0f0;
+}
+
   </style>
 </head>
 <body>
@@ -138,6 +153,14 @@
       <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-streets-v11')">Satellite Streets</button>
       <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
       <button onclick="location.href='/runInference'">Run Inference</button>
+      <h3>Select files to upload</h3>
+<button onclick="document.getElementById('fileInput').click()">Choose Files</button>
+<h3>Or drag and drop</h3>
+<div id="dropZone" ondrop="drop(event)" ondragover="allowDrop(event)">Drag and drop files here</div>
+<input type="file" id="fileInput" name="file" multiple style="display: none;">
+<p id="fileCount">Uploaded Files: 0</p>
+<button id="processAndSaveButton">Process and Save</button>
+
     </div>
    
     <!-- Main Content with map -->
@@ -328,6 +351,137 @@
 
     map.on('load', addMarkers);
     map.addControl(new mapboxgl.NavigationControl());
+
+    let inferenceResults = []; // Store inference results globally
+
+async function previewFiles() {
+  let files = document.querySelector('input[type=file]').files;
+  await handleFiles(files);
+}
+
+function updateFileCount() {
+    const fileInput = document.getElementById("fileInput");
+    const fileCountElement = document.getElementById("fileCount");
+
+    if (!fileInput || !fileCountElement) return;
+
+    fileCountElement.innerText = `Uploaded Files: ${fileInput.files.length}`;
+}
+
+async function runInferenceAndSaveResults() {
+    let formData = new FormData();
+    let fileInput = document.getElementById("fileInput");
+    let files = fileInput.files;
+
+    if (files.length === 0) {
+        alert("No files selected. Please choose images first.");
+        return;
+    }
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append("file", files[i]);
+    }
+
+    try {
+        // Run inference
+        let response = await fetch("/runInference", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        let data = await response.json();
+
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+            return;
+        }
+
+        let inferenceResults = data.results;
+
+        if (inferenceResults.length === 0) {
+            alert("No valid results to save.");
+            return;
+        }
+
+        // Save inference results
+        let saveResponse = await fetch("/saveResults", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ results: inferenceResults })
+        });
+
+        if (!saveResponse.ok) {
+            throw new Error(`Server error: ${saveResponse.statusText}`);
+        }
+
+        let saveData = await saveResponse.json();
+        alert("Successfully processed and saved: " + saveData.message);
+
+        fileInput.value = "";
+        updateFileCount(); // Refresh file count display
+
+        updateMapMarkers();
+
+    } catch (error) {
+        console.error("Error processing images:", error);
+        alert("Failed to process images. Check console for details.");
+    }
+}
+
+
+document.getElementById("processAndSaveButton").addEventListener("click", function(event) {
+    event.preventDefault();
+    runInferenceAndSaveResults();
+});
+
+
+function updateMapMarkers() {
+    if (map.getSource('images')) {
+        map.getSource('images').setData('/images');
+    } else {
+        addMarkers();
+    }
+}
+
+function previewFiles() {
+    let files = document.getElementById("fileInput").files;
+    handleFiles(files);
+    updateFileCount();
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drop(ev) {
+    ev.preventDefault();
+
+    const droppedFiles = ev.dataTransfer.files;
+    const fileInput = document.getElementById("fileInput");
+    const dataTransfer = new DataTransfer();
+
+    // Keep existing files in the input
+    for (let i = 0; i < fileInput.files.length; i++) {
+        dataTransfer.items.add(fileInput.files[i]);
+    }
+
+    // Add new dropped files
+    for (let i = 0; i < droppedFiles.length; i++) {
+        dataTransfer.items.add(droppedFiles[i]);
+    }
+
+    fileInput.files = dataTransfer.files;
+    
+    updateFileCount();
+}
+
+
+document.getElementById("fileInput").addEventListener("change", updateFileCount);
+
   </script>
 </body>
 </html>
