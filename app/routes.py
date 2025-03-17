@@ -1,7 +1,7 @@
 import os       # I use this for working with the file system and environment variables
 import logging  # I use this for debugging and tracking what's happening in the code
 import base64   # I use this for encoding/decoding data to and from Base64
-from flask import Blueprint, render_template, jsonify, request, redirect, url_for, send_file, abort, Flask, Response  # I use these Flask utilities for creating views, rendering templates, sending files, etc.
+from flask import Blueprint, render_template, jsonify, request, redirect, url_for, send_file, abort, Flask, Response, redirect, flash, session  # I use these Flask utilities for creating views, rendering templates, sending files, etc.
 from werkzeug.utils import secure_filename  # I use this to safely handle filenames when uploading
 from pymongo import MongoClient  # I use this to connect to MongoDB databases
 import pymongo  # I use this for additional MongoDB functionality when needed
@@ -19,6 +19,19 @@ import gridfs  # storing and retrieving the images in MongoDB
 
 bp = Blueprint("main", __name__)
 
+from functools import wraps
+
+# def login_required(f):
+#     @wraps(f)
+#     def decorated_function(*args, **kwargs):
+#         # If the user is not in session, redirect to the login page
+#         if "user" not in session:
+#             flash("Please log in to access this page.")
+#             return redirect(url_for("auth.login"))
+#         return f(*args, **kwargs)
+#     return decorated_function
+
+
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
@@ -30,6 +43,10 @@ client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
 
+# Local/OneDrive folder for uploads:
+UPLOAD_FOLDER = r"C:\Users\frost\OneDrive - The Pennsylvania State University\2024_drone_images\purple_loosestrife\07-17-2024"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
 # Offsets for drone error:
@@ -39,6 +56,7 @@ AGL_OFFSET_FEET = -10  # Adjust to make AGL values ~20 feet
 
 logging.basicConfig(level=logging.INFO)
 
+# @login_required
 def connect_to_mongodb():
     """Connects to MongoDB and returns a client."""
     client = MongoClient(MONGO_URI)
@@ -73,13 +91,15 @@ def convert_to_degrees(value, ref_tag):
 
 #MAPBOX
 
-@bp.route("/")
+@bp.route("/", endpoint="index")
+# @login_required
 def index():
     """Render a simple landing page."""
     return render_template("mapbox.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
     #return render_template("index.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
 
 @bp.route('/images')
+# @login_required
 def get_images():
     """Fetches image data from MongoDB and returns it as a GeoJSON FeatureCollection."""
     client = connect_to_mongodb()
@@ -100,21 +120,6 @@ def get_images():
         # Access the 'properties' dictionary correctly
         properties = doc.get("properties", {})
 
-        # Extract image binary data if available
-        raw_image_data = properties.get("image_data_binary")
-        image_data_base64 = None
-
-        if raw_image_data and isinstance(raw_image_data, dict) and "$binary" in raw_image_data:
-            image_data_base64 = raw_image_data["$binary"]["base64"]
-
-        # Create a valid GeoJSON feature
-#  "lat": properties.get("lat"),
-#                 "lon": properties.get("lon"),
-#                 "yaw": properties.get("yaw"),
-#                 "msl_alt": properties.get("msl_alt"),
-#                 "agl": properties.get("agl", "undefined"),
-#                 "agl_feet": properties.get("agl_feet", "undefined"),
-        #{0: 'narrowleaf_cattail', 1: 'none', 2: 'phragmites', 3: 'purple_loosestrife'}
         feature = {
             "type": "Feature",
             "properties": {
@@ -139,6 +144,7 @@ def get_images():
 
 
 @bp.route("/getImage/<file_id>", methods=["GET"])
+# @login_required
 def get_image(file_id):
     """Retrieve and serve an image stored in MongoDB GridFS."""
     try:
@@ -157,6 +163,7 @@ def get_image(file_id):
 
 
 @bp.route("/runInference", methods=["GET", "POST"])
+# @login_required
 def run_inference():
     if request.method == "GET":
         return render_template("runInference.html")
@@ -223,6 +230,7 @@ def run_inference():
     })
 
 @bp.route("/saveResults", methods=["POST"])
+# @login_required
 def save_results():
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
@@ -323,136 +331,8 @@ def save_results():
 
     return jsonify({"error": "No valid results to save"}), 400
 
-@bp.route("/deleteNonSelectedResults", methods=["POST"])
-def delete_non_selected_results():
-    """
-    Deletes images from MongoDB GridFS and collection that were not selected by the user.
-    """
-    try:
-        data = request.json
-        unselected_ids = data.get("ids", [])
 
-        if not unselected_ids:
-            return jsonify({"message": "No images to delete"}), 200
-
-        # Delete images from GridFS
-        for image_id in unselected_ids:
-            try:
-                fs.delete(ObjectId(image_id))  # Delete from GridFS
-            except Exception as e:
-                print(f"Error deleting image {image_id}: {str(e)}")
-
-        # Delete documents from the collection
-        db[COLLECTION_NAME].delete_many({"properties.file_id": {"$in": unselected_ids}})
-
-        return jsonify({"message": f"Deleted {len(unselected_ids)} unselected images"}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@bp.route("/test-image")
-def test_image():
-    client = connect_to_mongodb()
-    db = client[DATABASE_NAME]
-    collection = db[COLLECTION_NAME]
-
-    doc = collection.find_one()
-    
-    if not doc:
-        return jsonify({"error": "No images found in database"}), 404
-
-    return jsonify({
-        "_id": str(doc["_id"]),
-        "filename": doc.get("filename"),
-        "image_data": base64.b64encode(doc["image_data"]).decode("utf-8") if "image_data" in doc else None
-    })
-
-
-@bp.route("/upload", methods=["GET", "POST"])
-def upload_file():
-    if request.method == "POST":
-        if "file" not in request.files:
-            logging.error(" No file part in request")
-            return redirect(request.url)
-
-        files = request.files.getlist("file")
-        client = connect_to_mongodb()
-        db = client[DATABASE_NAME]
-        collection = db[COLLECTION_NAME]
-
-        # # Log database and collection being used
-        logging.info(f" Writing to database: {db.name}")
-        logging.info(f" Writing to collection: {collection.name}")
-        logging.info(f" Document count before upload: {collection.count_documents({})}")
-        logging.info(f" Flask is connecting to: {os.getenv('MONGO_URI', 'mongodb://localhost:27017/')}")            
-        for file in files:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-
-                # Read file bytes into memory
-                file_bytes = file.read()
-
-                # Create a BytesIO stream for EXIF processing
-                stream = BytesIO(file_bytes)
-                tags = exifread.process_file(stream, details=False)
-
-                # Extract GPS data
-                if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
-                    lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
-                    lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
-                    # Apply offsets if needed
-                    lat = lat - LATITUDE_OFFSET if lat is not None else None
-                    lon = lon - LONGITUDE_OFFSET if lon is not None else None
-                else:
-                    lat, lon = None, None
-
-                # Extract image direction (yaw) if available
-                if 'GPS GPSImgDirection' in tags:
-                    try:
-                        direction = tags['GPS GPSImgDirection'].values[0]
-                        yaw = float(direction.num) / float(direction.den)
-                    except Exception:
-                        yaw = "Unknown"
-                else:
-                    yaw = "Unknown"
-
-                # Extract altitude (meters) if available
-                if 'GPS GPSAltitude' in tags:
-                    try:
-                        altitude = tags['GPS GPSAltitude'].values[0]
-                        altitude_meters = float(altitude.num) / float(altitude.den)
-                    except Exception:
-                        altitude_meters = None
-                else:
-                    altitude_meters = None
-
-                image_metadata = {
-                            "type": "Feature",
-                            "properties": {
-                            "filename": filename,
-                            "lat": lat,
-                            "lon": lon,
-                            "yaw": yaw,
-                            "msl_alt": altitude_meters,
-                            "image_data_base64": Binary(file_bytes)
-                            },
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [lon, lat]
-                            }
-                        }
-                # Insert into MongoDB
-                result = collection.insert_one(image_metadata)
-                logging.info(f" Inserted document with id: {result.inserted_id}")
-
-        # Check if the document was successfully inserted
-        logging.info(f" Document count after upload: {collection.count_documents({})}")
-        sample_doc = collection.find_one({}, {"_id": 1, "properties.filename": 1, "properties.lat": 1, "properties.lon": 1})
-        logging.info(f"Sample document (without binary): {sample_doc}")
-
-
-        client.close()
-        return redirect(url_for("main.index"))
-
-    return render_template("testUpload.html")
+@bp.route("/exportData")
+# @login_required
+def export_Data():
+    return render_template("exportData.html")
