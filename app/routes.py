@@ -58,7 +58,11 @@ logging.basicConfig(level=logging.INFO)
 
 # @login_required
 def connect_to_mongodb():
+
     """Connects to MongoDB and returns a client."""
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
     client = MongoClient(MONGO_URI)
     # Quick test to ensure we can ping the server
     client.admin.command("ping")
@@ -94,6 +98,9 @@ def convert_to_degrees(value, ref_tag):
 @bp.route("/", endpoint="index")
 # @login_required
 def index():
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
     """Render a simple landing page."""
     return render_template("mapbox.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
     #return render_template("index.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
@@ -101,6 +108,9 @@ def index():
 @bp.route('/images')
 # @login_required
 def get_images():
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
     """Fetches image data from MongoDB and returns it as a GeoJSON FeatureCollection."""
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
@@ -146,7 +156,11 @@ def get_images():
 @bp.route("/getImage/<file_id>", methods=["GET"])
 # @login_required
 def get_image(file_id):
+    
     """Retrieve and serve an image stored in MongoDB GridFS."""
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
     try:
         # Convert file_id from string to ObjectId
         file_object_id = ObjectId(file_id)
@@ -163,8 +177,15 @@ def get_image(file_id):
 
 
 @bp.route("/runInference", methods=["GET", "POST"])
-# @login_required
 def run_inference():
+    # Manually enforce login
+    # if not session.get("user"):
+    #     flash("Please log in to access this page.")
+    #     return redirect(url_for("auth.login"))
+    if "user" not in session:
+                flash("Please log in to access this page.")
+                return redirect(url_for("auth.login"))
+
     if request.method == "GET":
         return render_template("runInference.html")
 
@@ -177,12 +198,10 @@ def run_inference():
         return jsonify({"error": "No files selected"}), 400
 
     results_list = []
-    
-
-    #model_path = os.path.join(os.getcwd(), "app", "singleModel_0.0.1.pt")
     model_path = os.path.join(os.getcwd(), "app", "single_model0.1.1.pt")
     model = YOLO(model_path)  # Load the model once, not inside the loop
     start_time = time.perf_counter()
+
     for file in files:
         if file.filename == "":
             continue
@@ -199,9 +218,8 @@ def run_inference():
             image_data = np.array(Image.open(BytesIO(retrieved_file.read())))  # Convert to NumPy array
             image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
             
-            
             # Run YOLO inference
-            results = model.predict(image_data, stream=True, verbose=False) #can set verbose to false if we don't want it to print info in the console
+            results = model.predict(image_data, stream=True, verbose=False)
 
             for result in results:
                 top_index = result.probs.top1  # Get top prediction index
@@ -232,6 +250,9 @@ def run_inference():
 @bp.route("/saveResults", methods=["POST"])
 # @login_required
 def save_results():
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
@@ -335,4 +356,7 @@ def save_results():
 @bp.route("/exportData")
 # @login_required
 def export_Data():
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
     return render_template("exportData.html")

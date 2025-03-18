@@ -1,4 +1,5 @@
 # auth.py
+# Troubleshooting bugs reference: https://chatgpt.com/share/67d9a0f6-86b0-800d-ada3-8ab5b65cb981
 import os
 import uuid
 import msal
@@ -15,7 +16,7 @@ CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
 TENANT_ID = os.getenv("AZURE_TENANT_ID")
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 REDIRECT_PATH = "/getAToken"
-SCOPE = []
+SCOPE = [] #not allowed to take users info
 
 def _build_msal_app(cache=None):
     return msal.ConfidentialClientApplication(
@@ -42,16 +43,12 @@ def login():
 
 @auth_bp.route(REDIRECT_PATH)
 def getAToken():
-    # Verify state to protect against CSRF
     if request.args.get("state") != session.get("state"):
         return redirect(url_for("main.index"))
-    
-    # Handle error returned by Azure
+
     if "error" in request.args:
-        error_desc = request.args.get("error_description", "No description provided")
-        return f"Authentication error: {error_desc}"
-    
-    # Exchange the auth code for tokens if provided
+        return f"Authentication error: {request.args.get('error_description', 'No description provided')}"
+
     if "code" in request.args:
         msal_app = _build_msal_app()
         result = msal_app.acquire_token_by_authorization_code(
@@ -59,9 +56,18 @@ def getAToken():
             scopes=SCOPE,
             redirect_uri=url_for("auth.getAToken", _external=True)
         )
-        if "id_token_claims" in result:
+        
+        # Debugging
+        print("MSAL Token Response:", result)
+
+        if "access_token" in result:
             session["user"] = result["id_token_claims"]
-    return redirect(url_for("main.index"))
+            session.permanent = True
+            return redirect(url_for("main.index"))
+        else:
+            return f"Token acquisition failed: {result.get('error_description', 'No error description')}"
+
+
 
 @auth_bp.route("/logout")
 def logout():
