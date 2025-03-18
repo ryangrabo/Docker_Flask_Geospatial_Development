@@ -240,17 +240,39 @@
         }
       });
 
-      // Layer for individual (unclustered) points.
+      map.on('style.load', function () {
+        // Add your marker image to the map
+        map.loadImage('/static/map-marker-2-32.png', function (error, image) {
+            if (error) throw error;
+            if (!map.hasImage('custom-marker')) {
+                map.addImage('custom-marker', image);
+            }
+            addMarkers(); // Re-add markers after ensuring the image is loaded
+        });
+      });
+
       map.addLayer({
         id: 'unclustered-point',
         type: 'symbol',
         source: 'images',
         filter: ['!', ['has', 'point_count']],
         layout: {
-          'icon-image': 'marker-15', // Default Mapbox marker icon
-          'icon-size': currentImageSize / 50  // Adjust scaling based on slider value
+          'icon-image': 'custom-marker', // Use the custom image instead of marker-15
+          'icon-size': currentImageSize / 80  // Adjust size dynamically
         }
       });
+
+      // Layer for individual (unclustered) points.
+      // map.addLayer({
+      //   id: 'unclustered-point',
+      //   type: 'symbol',
+      //   source: 'images',
+      //   filter: ['!', ['has', 'point_count']],
+      //   layout: {
+      //     'icon-image': 'marker-15', // Default Mapbox marker icon
+      //     'icon-size': currentImageSize / 50  // Adjust scaling based on slider value
+      //   }
+      // });
 
       // Zoom into clusters when clicked.
       map.on('click', 'clusters', function (e) {
