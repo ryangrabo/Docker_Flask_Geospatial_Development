@@ -198,7 +198,7 @@ def run_inference():
         return jsonify({"error": "No files selected"}), 400
 
     results_list = []
-    model_path = os.path.join(os.getcwd(), "app", "single_model0.1.1.pt")
+    model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
     model = YOLO(model_path)  # Load the model once, not inside the loop
     start_time = time.perf_counter()
 
