@@ -130,7 +130,7 @@
 </head>
 <body>
  <div id="map"></div>
-  <div class="controls">
+  <!-- <div class="controls">
     <div>
       <button onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
       <button onclick="setMapStyle('mapbox://styles/mapbox/light-v10')">Light</button>
@@ -139,16 +139,21 @@
       <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-streets-v11')">Satellite Streets</button>
       <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
     </div>
-  </div>
+  </div> -->
+  <div class="controls">
+    <label for="mapStyle">Map Style:</label>
+    <select id="mapStyle" onchange="setMapStyle(this.value)">
+      <option value="mapbox://styles/mapbox/streets-v11">Streets</option>
+      <option value="mapbox://styles/mapbox/light-v10">Light</option>
+      <option value="mapbox://styles/mapbox/dark-v10">Dark</option>
+      <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
+      <option value="mapbox://styles/mapbox/satellite-streets-v11">Satellite Streets</option>
+      <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
+    </select>
+  </div>  
 <!-- Sidebar (same style as runInference page) -->
   <div class="sidebar">
       <h2>Menu</h2>
-      <!-- <button onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/light-v10')">Light</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/dark-v10')">Dark</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-v9')">Satellite</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-streets-v11')">Satellite Streets</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button> -->
       <button onclick="location.href='/exportData'">Export Data</button>
       <button onclick="location.href='/runInference'">Run Inference</button>
       <h3>Select files to upload</h3>
@@ -251,6 +256,7 @@
         });
       });
 
+      // Layer for individual (unclustered) points.
       map.addLayer({
         id: 'unclustered-point',
         type: 'symbol',
@@ -261,8 +267,6 @@
           'icon-size': currentImageSize / 80  // Adjust size dynamically
         }
       });
-
-      // Layer for individual (unclustered) points.
       // map.addLayer({
       //   id: 'unclustered-point',
       //   type: 'symbol',
