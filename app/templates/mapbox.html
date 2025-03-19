@@ -249,9 +249,7 @@
         // Add your marker image to the map
         map.loadImage('/static/map-marker-2-32.png', function (error, image) {
             if (error) throw error;
-            if (!map.hasImage('custom-marker')) {
-                map.addImage('custom-marker', image);
-            }
+            map.addImage('custom-marker', image);
             addMarkers(); // Re-add markers after ensuring the image is loaded
         });
       });
