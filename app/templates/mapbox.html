@@ -245,13 +245,9 @@
         }
       });
 
-      map.on('style.load', function () {
-        // Add your marker image to the map
-        map.loadImage('/static/map-marker-2-32.png', function (error, image) {
+      map.loadImage('/static/map-marker-2-32.png', function (error, image) {
             if (error) throw error;
             map.addImage('custom-marker', image);
-            addMarkers(); // Re-add markers after ensuring the image is loaded
-        });
       });
 
       // Layer for individual (unclustered) points.
