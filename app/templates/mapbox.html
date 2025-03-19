@@ -249,9 +249,7 @@
         // Add your marker image to the map
         map.loadImage('/static/map-marker-2-32.png', function (error, image) {
             if (error) throw error;
-            if (!map.hasImage('custom-marker')) {
-                map.addImage('custom-marker', image);
-            }
+            map.addImage('custom-marker', image);
             addMarkers(); // Re-add markers after ensuring the image is loaded
         });
       });
@@ -300,35 +298,34 @@
       });
 
       map.on("click", "unclustered-point", function (e) {
-    console.log("Feature Clicked:", e.features[0]);
-    console.log("Properties:", e.features[0].properties);
+        console.log("Feature Clicked:", e.features[0]);
+        console.log("Properties:", e.features[0].properties);
 
-    const coordinates = e.features[0].geometry.coordinates.slice();
-    const props = e.features[0].properties;
-    // Extract the array [lon, lat]
-    const [lon, lat] = e.features[0].geometry.coordinates;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+        const props = e.features[0].properties;
+        // Extract the array [lon, lat]
+        const [lon, lat] = e.features[0].geometry.coordinates;
 
-    let popupContent = `<h3>${props.filename || "No Filename"}</h3>
-      <p><strong>Latitude, Longitude:</strong> ${lat}, ${lon}</p>
-      <p><strong>Predicted Class:</strong> ${props.predicted_class || "Unknown"}</p>
-      <p><strong>narrowleaf_cattail_prob:</strong> ${props.narrowleaf_cattail_prob.toFixed(2)|| "0"}</p>
-      <p><strong>none_prob:</strong> ${props.none_prob.toFixed(2)|| "0"}</p>
-      <p><strong>phragmites_prob:</strong> ${props.phragmites_prob.toFixed(2)|| "0"}</p>
-      <p><strong>purple_loosestrife_prob:</strong> ${props.purple_loosestrife_prob.toFixed(2)|| "0"}</p>
-      <img src="/getImage/${props.file_id}" 
-     alt="${props.filename}" 
-     style="max-width: 200px; height: auto; display: block; margin: 10px auto; border-radius: 5px; cursor: pointer;" 
-     onclick="showPreview('/getImage/${props.file_id}')">
-
-      `;
-//add into popupcontent if you want
-// <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
-    //<p><strong>Yaw:</strong> ${props.yaw ? props.yaw + "°" : "N/A"}</p>
-    new mapboxgl.Popup()
-        .setLngLat(coordinates)
-        .setHTML(popupContent)
-        .addTo(map);
-});
+        let popupContent = `<h3>${props.filename || "No Filename"}</h3>
+          <p><strong>Latitude, Longitude:</strong> ${lat}, ${lon}</p>
+          <p><strong>Predicted Class:</strong> ${props.predicted_class || "Unknown"}</p>
+          <p><strong>narrowleaf_cattail_prob:</strong> ${props.narrowleaf_cattail_prob.toFixed(2)|| "0"}</p>
+          <p><strong>none_prob:</strong> ${props.none_prob.toFixed(2)|| "0"}</p>
+          <p><strong>phragmites_prob:</strong> ${props.phragmites_prob.toFixed(2)|| "0"}</p>
+          <p><strong>purple_loosestrife_prob:</strong> ${props.purple_loosestrife_prob.toFixed(2)|| "0"}</p>
+          <img src="/getImage/${props.file_id}" 
+          alt="${props.filename}" 
+          style="max-width: 200px; height: auto; display: block; margin: 10px auto; border-radius: 5px; cursor: pointer;" 
+          onclick="showPreview('/getImage/${props.file_id}')">
+        `;
+        //add into popupcontent if you want
+        // <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
+            //<p><strong>Yaw:</strong> ${props.yaw ? props.yaw + "°" : "N/A"}</p>
+            new mapboxgl.Popup()
+                .setLngLat(coordinates)
+                .setHTML(popupContent)
+                .addTo(map);
+      });
 
 
       map.on('mouseenter', 'unclustered-point', function () {
