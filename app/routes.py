@@ -321,7 +321,7 @@ def save_results():
 
             # Ensure geometry is valid
             geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
-
+             
             # Create GeoJSON formatted result
             geojson_results.append({
                 "type": "Feature",
@@ -334,8 +334,8 @@ def save_results():
                     "phragmites_prob": result.get("phragmites_prob", 0),
                     "purple_loosestrife_prob": result.get("purple_loosestrife_prob", 0),
                     "file_id": file_id,
-                    "lat": lat,
-                    "lon": lon,
+                    # "lat": lat,
+                    # "lon": lon,
                     "yaw": yaw,
                     "msl_alt": altitude_meters,
                 },
