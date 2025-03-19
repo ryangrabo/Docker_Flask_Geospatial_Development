@@ -105,64 +105,82 @@ def index():
     return render_template("mapbox.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
     #return render_template("index.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
 
+# @bp.route('/images')
+# def get_images():
+#     if "user" not in session:
+#         flash("Please log in to access this page.")
+#         return redirect(url_for("auth.login"))
+
+#     """Fetches image data from MongoDB and returns it as a GeoJSON FeatureCollection."""
+#     client = connect_to_mongodb()
+#     db = client[DATABASE_NAME]
+#     collection = db[COLLECTION_NAME]
+
+#     docs = collection.find({})
+    
+#     # Start the GeoJSON data structure
+#     geojson_data = {
+#         "type": "FeatureCollection",
+#         "features": []
+#     }
+
+#     for doc in docs:
+#         # Convert ObjectId to string so that Mapbox has a marker ID for clustering
+#         doc_id = str(doc["_id"])
+
+#         # Access properties correctly
+#         properties = doc.get("properties", {})
+
+#         # Ensure geometry structure is correct
+#         geometry = doc.get("geometry", {})
+
+#         # Extract coordinates properly
+#         coordinates = geometry.get("coordinates", [])
+#         if not coordinates or len(coordinates) != 2:
+#             continue  # Skip if invalid coordinates
+
+#         lon, lat = coordinates  # Extract lon and lat
+
+#         feature = {
+#             "type": "Feature",
+#             "properties": {
+#                 "_id": doc_id,
+#                 "filename": properties.get("filename"),
+#                 "predicted_class": properties.get("predicted_class"),
+#                 "narrowleaf_cattail_prob": properties.get("narrowleaf_cattail_prob"),
+#                 "none_prob": properties.get("none_prob"),
+#                 "phragmites_prob": properties.get("phragmites_prob"),
+#                 "purple_loosestrife_prob": properties.get("purple_loosestrife_prob"),
+#                 "file_id": properties.get("file_id")
+#             },
+#             "geometry": {
+#                 "type": "Point",
+#                 "coordinates": [lon, lat]
+#             }
+#         }
+
+#         geojson_data["features"].append(feature)
+
+#     return jsonify(geojson_data)
+
 @bp.route('/images')
 def get_images():
     if "user" not in session:
         flash("Please log in to access this page.")
         return redirect(url_for("auth.login"))
 
-    """Fetches image data from MongoDB and returns it as a GeoJSON FeatureCollection."""
+    """Fetches image data from MongoDB and returns it directly as GeoJSON."""
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
 
-    docs = collection.find({})
-    
-    # Start the GeoJSON data structure
+    # Directly return the entire collection as a GeoJSON FeatureCollection
     geojson_data = {
         "type": "FeatureCollection",
-        "features": []
+        "features": list(collection.find({}, {"_id": 0}))  # Exclude MongoDB's _id
     }
 
-    for doc in docs:
-        # Convert ObjectId to string so that Mapbox has a marker ID for clustering
-        doc_id = str(doc["_id"])
-
-        # Access properties correctly
-        properties = doc.get("properties", {})
-
-        # Ensure geometry structure is correct
-        geometry = doc.get("geometry", {})
-
-        # Extract coordinates properly
-        coordinates = geometry.get("coordinates", [])
-        if not coordinates or len(coordinates) != 2:
-            continue  # Skip if invalid coordinates
-
-        lon, lat = coordinates  # Extract lon and lat
-
-        feature = {
-            "type": "Feature",
-            "properties": {
-                "_id": doc_id,
-                "filename": properties.get("filename"),
-                "predicted_class": properties.get("predicted_class"),
-                "narrowleaf_cattail_prob": properties.get("narrowleaf_cattail_prob"),
-                "none_prob": properties.get("none_prob"),
-                "phragmites_prob": properties.get("phragmites_prob"),
-                "purple_loosestrife_prob": properties.get("purple_loosestrife_prob"),
-                "file_id": properties.get("file_id")
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [lon, lat]
-            }
-        }
-
-        geojson_data["features"].append(feature)
-
     return jsonify(geojson_data)
-
 
 
 @bp.route("/getImage/<file_id>", methods=["GET"])
