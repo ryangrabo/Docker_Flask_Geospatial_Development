@@ -106,29 +106,40 @@ def index():
     #return render_template("index.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
 
 @bp.route('/images')
-# @login_required
 def get_images():
     if "user" not in session:
-             flash("Please log in to access this page.")
-             return redirect(url_for("auth.login"))
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+
     """Fetches image data from MongoDB and returns it as a GeoJSON FeatureCollection."""
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
 
     docs = collection.find({})
-#start the geojson data
+    
+    # Start the GeoJSON data structure
     geojson_data = {
         "type": "FeatureCollection",
         "features": []
     }
 
     for doc in docs:
-        # Convert ObjectId to string so that mapbox had a marker id for the point for clustering
+        # Convert ObjectId to string so that Mapbox has a marker ID for clustering
         doc_id = str(doc["_id"])
 
-        # Access the 'properties' dictionary correctly
+        # Access properties correctly
         properties = doc.get("properties", {})
+
+        # Ensure geometry structure is correct
+        geometry = doc.get("geometry", {})
+
+        # Extract coordinates properly
+        coordinates = geometry.get("coordinates", [])
+        if not coordinates or len(coordinates) != 2:
+            continue  # Skip if invalid coordinates
+
+        lon, lat = coordinates  # Extract lon and lat
 
         feature = {
             "type": "Feature",
@@ -144,13 +155,14 @@ def get_images():
             },
             "geometry": {
                 "type": "Point",
-                "coordinates": [properties.get("lon"), properties.get("lat")]
+                "coordinates": [lon, lat]
             }
         }
 
         geojson_data["features"].append(feature)
 
     return jsonify(geojson_data)
+
 
 
 @bp.route("/getImage/<file_id>", methods=["GET"])
@@ -321,7 +333,7 @@ def save_results():
 
             # Ensure geometry is valid
             geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
-             
+
             # Create GeoJSON formatted result
             geojson_results.append({
                 "type": "Feature",
@@ -334,6 +346,7 @@ def save_results():
                     "phragmites_prob": result.get("phragmites_prob", 0),
                     "purple_loosestrife_prob": result.get("purple_loosestrife_prob", 0),
                     "file_id": file_id,
+                    "lowProb"
                     # "lat": lat,
                     # "lon": lon,
                     "yaw": yaw,
