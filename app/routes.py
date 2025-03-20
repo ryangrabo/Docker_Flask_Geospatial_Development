@@ -278,7 +278,7 @@ def run_inference():
         "elapsed_time": elapsed_time
     })
 
-@bp.route("/runInferenceAndSaveResults", methods=["GET", "POST"])
+@bp.route("/runInferenceAndSaveResults", methods=["POST"])
 def run_inference_and_save():
     # Manually enforce login
     # if not session.get("user"):
@@ -288,9 +288,6 @@ def run_inference_and_save():
                 flash("Please log in to access this page.")
                 return redirect(url_for("auth.login"))
 
-    if request.method == "GET":
-        return render_template("runInference.html")
-
     if "file" not in request.files:
         return jsonify({"error": "No file part in request"}), 400
 
@@ -299,7 +296,10 @@ def run_inference_and_save():
     if not files:
         return jsonify({"error": "No files selected"}), 400
 
-    results_list = []
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
+    geojson_results = []
     model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
     model = YOLO(model_path)  # Load the model once, not inside the loop
     start_time = time.perf_counter()
@@ -325,11 +325,10 @@ def run_inference_and_save():
         # Run YOLO inference
         results = model.predict(image_data, stream=True, verbose=False)
 
-        for result in results:
-            top_index = result.probs.top1  # Get top prediction index
-            top_class = result.names[top_index]  # Get class name
-            probabilities = result.probs.data.tolist()  # Get probabilities
-            total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
+        # for result in results:
+        #     top_index = result.probs.top1  # Get top prediction index
+        #     top_class = result.names[top_index]  # Get class name
+        #     probabilities = result.probs.data.tolist()  # Get probabilities
 
                 # results_list.append({
                 #     "total_inference_time": total_inference,
@@ -343,9 +342,63 @@ def run_inference_and_save():
                 #     "file_id": str(file_id)  # Store MongoDB file ID
                 # })
             
-            # Extract location metadata
+        # Extract location metadata
+        file_bytes = retrieved_file.read()
 
-            #save results to DB
+        # Extract EXIF metadata
+        stream = BytesIO(file_bytes)
+        tags = exifread.process_file(stream, details=False)
+
+        # Extract GPS data
+        lat, lon = None, None
+        try:
+            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
+                lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
+                lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
+                lat = lat - LATITUDE_OFFSET if lat is not None else None
+                lon = lon - LONGITUDE_OFFSET if lon is not None else None
+        except Exception as e:
+            logging.error(f"GPS extraction failed for file_id {file_id}: {e}")
+
+        # Extract image direction (yaw) if available
+        yaw = "Unknown"
+        try:
+            if 'GPS GPSImgDirection' in tags:
+                direction = tags['GPS GPSImgDirection'].values[0]
+                yaw = float(direction.num) / float(direction.den)
+        except Exception:
+            yaw = "Unknown"
+
+        # Extract altitude (meters) if available
+        altitude_meters = None
+        try:
+            if 'GPS GPSAltitude' in tags:
+                altitude = tags['GPS GPSAltitude'].values[0]
+                altitude_meters = float(altitude.num) / float(altitude.den)
+        except Exception:
+            altitude_meters = None
+
+        # Ensure geometry is valid
+        geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
+
+        # Create GeoJSON formatted result
+        geojson_results.append({
+            "type": "Feature",
+            "properties": {
+                "filename": result.get("filename", "Unknown"),
+                "predicted_class": result.get("predicted_class", "Unknown"),
+                "narrowleaf_cattail_prob": result.get("narrowleaf_cattail_prob", 0),
+                "none_prob": result.get("none_prob", 0),
+                "phragmites_prob": result.get("phragmites_prob", 0),
+                "purple_loosestrife_prob": result.get("purple_loosestrife_prob", 0),
+                "file_id": file_id,
+                "lowProb"
+                "yaw": yaw,
+                "msl_alt": altitude_meters,
+            },
+            "geometry": geometry
+        })
+        #save results to DB
 
     end_time = time.perf_counter()
     elapsed_time = round(end_time - start_time, 4)
