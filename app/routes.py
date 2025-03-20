@@ -325,10 +325,11 @@ def run_inference_and_save():
         # Run YOLO inference
         results = model.predict(image_data, stream=True, verbose=False)
 
-        # for result in results:
-        #     top_index = result.probs.top1  # Get top prediction index
-        #     top_class = result.names[top_index]  # Get class name
-        #     probabilities = result.probs.data.tolist()  # Get probabilities
+        # get results
+        top_index = results[0].probs.top1  # Get top prediction index
+        top_class = results[0].names[top_index]  # Get class name
+        probabilities = results[0].probs.data.tolist()  # Get probabilities
+
 
                 # results_list.append({
                 #     "total_inference_time": total_inference,
@@ -385,12 +386,12 @@ def run_inference_and_save():
         geojson_results.append({
             "type": "Feature",
             "properties": {
-                "filename": result.get("filename", "Unknown"),
-                "predicted_class": result.get("predicted_class", "Unknown"),
-                "narrowleaf_cattail_prob": result.get("narrowleaf_cattail_prob", 0),
-                "none_prob": result.get("none_prob", 0),
-                "phragmites_prob": result.get("phragmites_prob", 0),
-                "purple_loosestrife_prob": result.get("purple_loosestrife_prob", 0),
+                "filename": file.filename,
+                "predicted_class": top_class,
+                "narrowleaf_cattail_prob": probabilities[0],
+                "none_prob": probabilities[1],
+                "phragmites_prob": probabilities[2],
+                "purple_loosestrife_prob": probabilities[3],
                 "file_id": file_id,
                 "lowProb"
                 "yaw": yaw,
@@ -398,15 +399,17 @@ def run_inference_and_save():
             },
             "geometry": geometry
         })
-        #save results to DB
+        
 
     end_time = time.perf_counter()
     elapsed_time = round(end_time - start_time, 4)
 
-    return jsonify({
-        "results": results_list,
-        "elapsed_time": elapsed_time
-    })
+    # Save results in MongoDB
+    if geojson_results:
+        inserted_ids = collection.insert_many(geojson_results).inserted_ids
+        return jsonify({"message": f"Saved {len(inserted_ids)} results to the database"})
+
+    return jsonify({"error": "No valid results to save"}), 400
 
 @bp.route("/saveResults", methods=["POST"])
 # @login_required
