@@ -401,7 +401,7 @@ async function runInferenceAndSaveResults() {
 
     try {
         // Run inference
-        let response = await fetch("/runInference", {
+        let response = await fetch("/runInferenceAndSaveResults", {
             method: "POST",
             body: formData
         });
@@ -410,32 +410,7 @@ async function runInferenceAndSaveResults() {
             throw new Error(`Server error: ${response.statusText}`);
         }
 
-        let data = await response.json();
-
-        if (data.error) {
-            alert(`Error: ${data.error}`);
-            return;
-        }
-
-        let inferenceResults = data.results;
-
-        if (inferenceResults.length === 0) {
-            alert("No valid results to save.");
-            return;
-        }
-
-        // Save inference results
-        let saveResponse = await fetch("/saveResults", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ results: inferenceResults })
-        });
-
-        if (!saveResponse.ok) {
-            throw new Error(`Server error: ${saveResponse.statusText}`);
-        }
-
-        let saveData = await saveResponse.json();
+        let saveData = await response.json();
         alert("Successfully processed and saved: " + saveData.message);
 
         fileInput.value = "";
