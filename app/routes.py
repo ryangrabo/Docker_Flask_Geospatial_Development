@@ -299,7 +299,7 @@ def run_inference_and_save():
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
-    geojson_results = []
+    inserted_count=0
     model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
     model = YOLO(model_path)  # Load the model once, not inside the loop
     start_time = time.perf_counter()
@@ -323,27 +323,15 @@ def run_inference_and_save():
         image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
         
         # Run YOLO inference
-        results = model.predict(image_data, stream=True, verbose=False)
+        results = model.predict(image_data, verbose=False)
 
         # get results
         top_index = results[0].probs.top1  # Get top prediction index
         top_class = results[0].names[top_index]  # Get class name
         probabilities = results[0].probs.data.tolist()  # Get probabilities
-
-
-                # results_list.append({
-                #     "total_inference_time": total_inference,
-                #     "filename": filename,
-                #     "predicted_class": top_class,
-                #     "narrowleaf_cattail_prob": probabilities[0],
-                #     "none_prob": probabilities[1],
-                #     "phragmites_prob": probabilities[2],
-                #     "purple_loosestrife_prob": probabilities[3],
-                #     "top_index": top_index,
-                #     "file_id": str(file_id)  # Store MongoDB file ID
-                # })
             
         # Extract location metadata
+        retrieved_file = fs.get(ObjectId(file_id))
         file_bytes = retrieved_file.read()
 
         # Extract EXIF metadata
@@ -383,7 +371,7 @@ def run_inference_and_save():
         geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
 
         # Create GeoJSON formatted result
-        geojson_results.append({
+        geojson_result = {
             "type": "Feature",
             "properties": {
                 "filename": file.filename,
@@ -392,22 +380,25 @@ def run_inference_and_save():
                 "none_prob": probabilities[1],
                 "phragmites_prob": probabilities[2],
                 "purple_loosestrife_prob": probabilities[3],
-                "file_id": file_id,
+                "file_id": str(file_id),
                 "lowProb"
                 "yaw": yaw,
                 "msl_alt": altitude_meters,
             },
             "geometry": geometry
-        })
-        
+        }
+
+        # save results in MongoDB immediately in the loop
+        insert_result = collection.insert_one(geojson_result)
+        if insert_result.inserted_id:
+            inserted_count+=1
 
     end_time = time.perf_counter()
     elapsed_time = round(end_time - start_time, 4)
 
     # Save results in MongoDB
-    if geojson_results:
-        inserted_ids = collection.insert_many(geojson_results).inserted_ids
-        return jsonify({"message": f"Saved {len(inserted_ids)} results to the database"})
+    if inserted_count>0:
+        return jsonify({"message": f"Saved {inserted_count} results to the database"})
 
     return jsonify({"error": "No valid results to save"}), 400
 
