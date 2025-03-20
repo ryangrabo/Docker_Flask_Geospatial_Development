@@ -205,7 +205,6 @@ def get_image(file_id):
 
 
 
-
 @bp.route("/runInference", methods=["GET", "POST"])
 def run_inference():
     # Manually enforce login
@@ -236,38 +235,117 @@ def run_inference():
         if file.filename == "":
             continue
 
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
+        if not file or not allowed_file(file.filename):
+            continue
+        
+        filename = secure_filename(file.filename)
 
-            # Save file to MongoDB GridFS
-            file_id = fs.put(file, filename=filename)
-            print(f"Saved to MongoDB with ID: {file_id}")
+        # Save file to MongoDB GridFS
+        file_id = fs.put(file, filename=filename)
+        print(f"Saved to MongoDB with ID: {file_id}")
 
-            # Retrieve the image from MongoDB
-            retrieved_file = fs.get(file_id)
-            image_data = np.array(Image.open(BytesIO(retrieved_file.read())))  # Convert to NumPy array
-            image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+        # Retrieve the image from MongoDB
+        retrieved_file = fs.get(file_id)
+        image_data = np.array(Image.open(BytesIO(retrieved_file.read())))  # Convert to NumPy array
+        image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+        
+        # Run YOLO inference
+        results = model.predict(image_data, stream=True, verbose=False)
+
+        for result in results:
+            top_index = result.probs.top1  # Get top prediction index
+            top_class = result.names[top_index]  # Get class name
+            probabilities = result.probs.data.tolist()  # Get probabilities
+            total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
+
+            results_list.append({
+                "total_inference_time": total_inference,
+                "filename": filename,
+                "predicted_class": top_class,
+                "narrowleaf_cattail_prob": probabilities[0],
+                "none_prob": probabilities[1],
+                "phragmites_prob": probabilities[2],
+                "purple_loosestrife_prob": probabilities[3],
+                "top_index": top_index,
+                "file_id": str(file_id)  # Store MongoDB file ID
+            })
+
+    end_time = time.perf_counter()
+    elapsed_time = round(end_time - start_time, 4)
+
+    return jsonify({
+        "results": results_list,
+        "elapsed_time": elapsed_time
+    })
+
+@bp.route("/runInferenceAndSaveResults", methods=["GET", "POST"])
+def run_inference_and_save():
+    # Manually enforce login
+    # if not session.get("user"):
+    #     flash("Please log in to access this page.")
+    #     return redirect(url_for("auth.login"))
+    if "user" not in session:
+                flash("Please log in to access this page.")
+                return redirect(url_for("auth.login"))
+
+    if request.method == "GET":
+        return render_template("runInference.html")
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in request"}), 400
+
+    files = request.files.getlist("file")  # Handle multiple files
+
+    if not files:
+        return jsonify({"error": "No files selected"}), 400
+
+    results_list = []
+    model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
+    model = YOLO(model_path)  # Load the model once, not inside the loop
+    start_time = time.perf_counter()
+
+    for file in files:
+        if file.filename == "":
+            continue
+
+        if not file or not allowed_file(file.filename):
+            continue
+        
+        filename = secure_filename(file.filename)
+
+        # Save file to MongoDB GridFS
+        file_id = fs.put(file, filename=filename)
+        print(f"Saved to MongoDB with ID: {file_id}")
+
+        # Retrieve the image from MongoDB
+        retrieved_file = fs.get(file_id)
+        image_data = np.array(Image.open(BytesIO(retrieved_file.read())))  # Convert to NumPy array
+        image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+        
+        # Run YOLO inference
+        results = model.predict(image_data, stream=True, verbose=False)
+
+        for result in results:
+            top_index = result.probs.top1  # Get top prediction index
+            top_class = result.names[top_index]  # Get class name
+            probabilities = result.probs.data.tolist()  # Get probabilities
+            total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
+
+                # results_list.append({
+                #     "total_inference_time": total_inference,
+                #     "filename": filename,
+                #     "predicted_class": top_class,
+                #     "narrowleaf_cattail_prob": probabilities[0],
+                #     "none_prob": probabilities[1],
+                #     "phragmites_prob": probabilities[2],
+                #     "purple_loosestrife_prob": probabilities[3],
+                #     "top_index": top_index,
+                #     "file_id": str(file_id)  # Store MongoDB file ID
+                # })
             
-            # Run YOLO inference
-            results = model.predict(image_data, stream=True, verbose=False)
+            # Extract location metadata
 
-            for result in results:
-                top_index = result.probs.top1  # Get top prediction index
-                top_class = result.names[top_index]  # Get class name
-                probabilities = result.probs.data.tolist()  # Get probabilities
-                total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
-
-                results_list.append({
-                    "total_inference_time": total_inference,
-                    "filename": filename,
-                    "predicted_class": top_class,
-                    "narrowleaf_cattail_prob": probabilities[0],
-                    "none_prob": probabilities[1],
-                    "phragmites_prob": probabilities[2],
-                    "purple_loosestrife_prob": probabilities[3],
-                    "top_index": top_index,
-                    "file_id": str(file_id)  # Store MongoDB file ID
-                })
+            #save results to DB
 
     end_time = time.perf_counter()
     elapsed_time = round(end_time - start_time, 4)
@@ -283,6 +361,7 @@ def save_results():
     if "user" not in session:
              flash("Please log in to access this page.")
              return redirect(url_for("auth.login"))
+    
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
