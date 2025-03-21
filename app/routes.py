@@ -14,8 +14,7 @@ import cv2  # image manipulation with OpenCV
 import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
-#TODO Add functionality to print message to user if they try to upload file type that isn't .jpg
-#TODO (not sure if this is done here) need to send lower resolution images of the image back to user UNLESS they click on it to make it bigger, website has very high RAM usage
+#import gc  # Add this at the top
 
 bp = Blueprint("main", __name__)
 
@@ -53,6 +52,10 @@ ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 LATITUDE_OFFSET = 0.00004
 LONGITUDE_OFFSET = 0.00
 AGL_OFFSET_FEET = -10  # Adjust to make AGL values ~20 feet
+
+#load model
+model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
+model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
 
@@ -227,8 +230,6 @@ def run_inference():
         return jsonify({"error": "No files selected"}), 400
 
     results_list = []
-    model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
-    model = YOLO(model_path)  # Load the model once, not inside the loop
     start_time = time.perf_counter()
 
     for file in files:
@@ -300,8 +301,6 @@ def run_inference_and_save():
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
     inserted_count=0
-    model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
-    model = YOLO(model_path)  # Load the model once, not inside the loop
     start_time = time.perf_counter()
 
     for file in files:
@@ -318,8 +317,9 @@ def run_inference_and_save():
         print(f"Saved to MongoDB with ID: {file_id}")
 
         # Retrieve the image from MongoDB
-        retrieved_file = fs.get(file_id)
-        image_data = np.array(Image.open(BytesIO(retrieved_file.read())))  # Convert to NumPy array
+        retrieved_file = fs.get(ObjectId(file_id))
+        file_bytes = retrieved_file.read()
+        image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
         image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
         
         # Run YOLO inference
@@ -330,10 +330,6 @@ def run_inference_and_save():
         top_class = results[0].names[top_index]  # Get class name
         probabilities = results[0].probs.data.tolist()  # Get probabilities
             
-        # Extract location metadata
-        retrieved_file = fs.get(ObjectId(file_id))
-        file_bytes = retrieved_file.read()
-
         # Extract EXIF metadata
         stream = BytesIO(file_bytes)
         tags = exifread.process_file(stream, details=False)
@@ -393,10 +389,14 @@ def run_inference_and_save():
         if insert_result.inserted_id:
             inserted_count+=1
 
+        # **Memory Cleanup**
+        #del image_data, file_bytes, stream, retrieved_file, results, geojson_result, tags
+        #gc.collect()  # Force garbage collection
+
     end_time = time.perf_counter()
     elapsed_time = round(end_time - start_time, 4)
 
-    # Save results in MongoDB
+    # return message to client
     if inserted_count>0:
         return jsonify({"message": f"Saved {inserted_count} results to the database"})
 
