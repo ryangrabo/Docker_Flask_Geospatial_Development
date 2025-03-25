@@ -14,9 +14,8 @@ import cv2  # image manipulation with OpenCV
 import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
-import datetime
 from app.utils import convert_to_degrees, allowed_file, connect_to_mongodb
-from app.process_folder import process_folder
+from app.process_images import process_folder
 #import gc  # Add this at the top
 
 bp = Blueprint("main", __name__)
