@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from ultralytics import YOLO  # YOLO inference
 import time
 import logging  # I use this for debugging and tracking what's happening in the code
@@ -57,7 +56,8 @@ def process_image(image_path):
     probabilities = result.probs.data.tolist()  # Get probabilities
         
     # Extract EXIF metadata
-    tags = exifread.process_file(image_path, details=False)
+    f = open(image_path, 'rb')
+    tags = exifread.process_file(f, details=False)
 
     # Extract GPS data
     lat, lon = None, None
@@ -68,7 +68,7 @@ def process_image(image_path):
             lat = lat - LATITUDE_OFFSET if lat is not None else None
             lon = lon - LONGITUDE_OFFSET if lon is not None else None
     except Exception as e:
-        logging.error(f"GPS extraction failed for file_id {file_id}: {e}")
+        logging.error(f"GPS extraction failed for {image_path} with ID {image_id}: {e}")
 
     # Extract image direction (yaw) if available
     yaw = "Unknown"
@@ -95,7 +95,7 @@ def process_image(image_path):
     geojson_result = {
         "type": "Feature",
         "properties": {
-            "filename": file.filename,
+            "filename": image_path,
             "predicted_class": top_class,
             "narrowleaf_cattail_prob": probabilities[0],
             "none_prob": probabilities[1],
@@ -111,6 +111,7 @@ def process_image(image_path):
     # save results in MongoDB
     insert_result = collection.insert_one(geojson_result)
     if insert_result.inserted_id:
+        logging.info(f"Saved {image_path} with ID: {insert_result.inserted_id}")
         return f"Saved {image_path} with ID: {insert_result.inserted_id}"
 
     return f"Error: unable to save to DB"
@@ -119,7 +120,7 @@ def process_folder(folder_path):
     """
     Processes a folder of images by inferencing, getting location metadata, and storing results in the DB
     :param folder_path: path to the folder
-    :return: 
+    :return: NULL
     """
     start_time = time.perf_counter()
 
@@ -132,10 +133,7 @@ def process_folder(folder_path):
     elapsed_time = round(end_time - start_time, 4)
     logging.info(f"Total process Time for the folder: {elapsed_time:.4f} seconds.")
 
-# In process_folder.py
+
 if __name__ == "__main__":
     folder_path = sys.argv[1]  # Get folder path from command line argument
     process_folder(folder_path)
-
-
-    

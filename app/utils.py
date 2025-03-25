@@ -12,6 +12,17 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
+# @login_required
+def connect_to_mongodb():
+
+    """Connects to MongoDB and returns a client."""
+    client = MongoClient(MONGO_URI)
+    # Quick test to ensure we can ping the server
+    client.admin.command("ping")
+    logging.info("Connected successfully to MongoDB")
+    return client
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -34,15 +45,3 @@ def convert_to_degrees(value, ref_tag):
         logging.error(f"Error converting GPS value: {e}")
         return None
 
-# @login_required
-def connect_to_mongodb():
-
-    """Connects to MongoDB and returns a client."""
-    if "user" not in session:
-             flash("Please log in to access this page.")
-             return redirect(url_for("auth.login"))
-    client = MongoClient(MONGO_URI)
-    # Quick test to ensure we can ping the server
-    client.admin.command("ping")
-    logging.info("Connected successfully to MongoDB")
-    return client
