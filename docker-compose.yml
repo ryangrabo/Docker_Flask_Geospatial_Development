@@ -16,7 +16,6 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./images:/images  # Bind mount for images
       - ./app:/app  # Binds local code directory to container for live updates
       - ~/.cache/pip:/root/.cache/pip #use cache to grab libraries
     networks:
