@@ -18,7 +18,7 @@ from PIL import Image  #  working with images in Python
 #setup logging
 logging.basicConfig(level=logging.INFO)
 
-WAIT_INTERVAL=0.5
+WAIT_INTERVAL=1
 
 # Offsets for drone error:
 LATITUDE_OFFSET = 0.00004
@@ -51,7 +51,7 @@ def process_image(file_id):
     try:
         retrieved_file = fs.get(ObjectId(file_id))
     except Exception as e:
-        logging.info(f"Unable to access id {file_id}.\nError: {e}")
+        logging.error(f"Unable to access id {file_id}.\nError: {e}")
     
     file_bytes = retrieved_file.read()
     image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
@@ -120,7 +120,16 @@ def process_image(file_id):
 
     # save results in MongoDB immediately in the loop
     insert_result = collection.insert_one(geojson_result)
-    fs_files.update_one({"_id": file_id}, {"$set": {"metadata.processed": True}})
+
+    update_result = fs_files.update_one(
+        {"_id": ObjectId(file_id)},  # Ensure ObjectId conversion
+        {"$set": {"metadata.processed": True}}
+    )
+
+    if update_result.modified_count == 0:
+        logging.warning(f"Failed to update metadata for file_id {file_id}")
+    else:
+        logging.info(f"Marked file {file_id} as processed.")
 
     if insert_result.inserted_id:
         logging.info(f"Saved results with id: {insert_result.inserted_id}")
@@ -133,11 +142,12 @@ def process_images():
     Runs a loop that queries DB based on an interval
     Processes any images that it find that are unprocessed
     """
+    logging.info(f"Process images Worker Started with PID: {os.getpid()}\nChecks DB every {WAIT_INTERVAL} seconds for unprocessed images.")
     while True:
-        #logging.info(f"Process images PID: {os.getpid()}")
         query_results = list(fs_files.find({"metadata.processed": False}).batch_size(50))  # Convert cursor to list
         length = len(query_results)
-        logging.info(f"Found {length} unprocessed images.")
+        if length > 0:
+            logging.info(f"Found {length} unprocessed images.")
 
         #logging.info(query_results)
 
@@ -146,5 +156,5 @@ def process_images():
             logging.info(f"To be processed: Object ID: {id}")
             process_image(id)
 
-        time.sleep(10)
+        time.sleep(WAIT_INTERVAL)
         
