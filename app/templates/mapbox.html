@@ -161,8 +161,8 @@
 <h3>Or drag and drop</h3>
 <div id="dropZone" ondrop="drop(event)" ondragover="allowDrop(event)">Drag and drop files here</div>
 <input type="file" id="fileInput" name="file" multiple style="display: none;">
-<p id="fileCount">Uploaded Files: 0</p>
-<button id="processAndSaveButton">Process and Save</button>
+<p id="fileCount">Files to Upload: 0</p>
+<button id="uploadButton">Upload Images</button>
 
     </div>
    
@@ -382,10 +382,10 @@ function updateFileCount() {
 
     if (!fileInput || !fileCountElement) return;
 
-    fileCountElement.innerText = `Uploaded Files: ${fileInput.files.length}`;
+    fileCountElement.innerText = `Files to Upload: ${fileInput.files.length}`;
 }
 
-async function runInferenceAndSaveResults() {
+async function upload() {
     let formData = new FormData();
     let fileInput = document.getElementById("fileInput");
     let files = fileInput.files;
@@ -400,7 +400,7 @@ async function runInferenceAndSaveResults() {
     }
 
     try {
-        // Run inference
+        // upload
         let response = await fetch("/upload_images", {
             method: "POST",
             body: formData
@@ -411,7 +411,7 @@ async function runInferenceAndSaveResults() {
         }
 
         let saveData = await response.json();
-        alert("Successfully processed and saved: " + saveData.message);
+        alert("Upload Results: " + saveData.message);
 
         fileInput.value = "";
         updateFileCount(); // Refresh file count display
@@ -425,9 +425,9 @@ async function runInferenceAndSaveResults() {
 }
 
 
-document.getElementById("processAndSaveButton").addEventListener("click", function(event) {
+document.getElementById("uploadButton").addEventListener("click", function(event) {
     event.preventDefault();
-    runInferenceAndSaveResults();
+    upload();
 });
 
 
