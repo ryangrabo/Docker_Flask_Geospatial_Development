@@ -15,6 +15,8 @@ import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
 import datetime
+from app.utils import convert_to_degrees, connect_to_mongodb, allowed_file
+import subprocess
 #import gc  # Add this at the top
 
 bp = Blueprint("main", __name__)
@@ -47,8 +49,6 @@ client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
 
-ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
-
 # Offsets for drone error:
 LATITUDE_OFFSET = 0.00004
 LONGITUDE_OFFSET = 0.00
@@ -60,42 +60,6 @@ model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
 
-# @login_required
-def connect_to_mongodb():
-
-    """Connects to MongoDB and returns a client."""
-    if "user" not in session:
-             flash("Please log in to access this page.")
-             return redirect(url_for("auth.login"))
-    client = MongoClient(MONGO_URI)
-    # Quick test to ensure we can ping the server
-    client.admin.command("ping")
-    print("Connected successfully to MongoDB")
-    return client
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def convert_to_degrees(value, ref_tag):
-    """
-    Converts the GPS coordinates stored in the EXIF to degrees in float format.
-    :param value: EXIF GPS coordinate value.
-    :param ref_tag: EXIF GPS reference tag (e.g., 'N', 'S', 'E', 'W').
-    :return: GPS coordinate in degrees (float) or None if conversion fails.
-    """
-    try:
-        d = value.values[0].num / value.values[0].den
-        m = value.values[1].num / value.values[1].den
-        s = value.values[2].num / value.values[2].den
-        result = d + (m / 60.0) + (s / 3600.0)
-        if ref_tag and ref_tag.values[0] in ['S', 'W']:
-            result = -result
-        return result
-    except Exception as e:
-        logging.error(f"Error converting GPS value: {e}")
-        return None
 
 #MAPBOX
 
@@ -186,7 +150,7 @@ def run_inference():
 
         # Save file to MongoDB GridFS
         file_id = fs.put(file, filename=filename)
-        print(f"Saved to MongoDB with ID: {file_id}")
+        logging.info(f"Saved to MongoDB with ID: {file_id}")
 
         # Retrieve the image from MongoDB
         retrieved_file = fs.get(file_id)
@@ -257,7 +221,7 @@ def run_inference_and_save():
 
         # Save file to MongoDB GridFS
         file_id = fs.put(file, filename=filename)
-        print(f"Saved to MongoDB with ID: {file_id}")
+        logging.info(f"Saved to MongoDB with ID: {file_id}")
 
         # Retrieve the image from MongoDB
         retrieved_file = fs.get(ObjectId(file_id))
@@ -395,7 +359,7 @@ def upload_images():
    
     # return message to client
     if inserted_count>0:
-        print(f"Saved {inserted_count} images into the folder: {folder_path}")
+        logging.info(f"Saved {inserted_count} images into the folder: {folder_path}")
         return jsonify({"message": f"Saved {inserted_count} images to be processed."})
 
     return jsonify({"error": "No valid results to save"}), 400
