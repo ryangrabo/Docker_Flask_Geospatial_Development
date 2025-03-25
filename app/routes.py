@@ -14,6 +14,7 @@ import cv2  # image manipulation with OpenCV
 import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
+import datetime
 #import gc  # Add this at the top
 
 bp = Blueprint("main", __name__)
@@ -36,15 +37,15 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
 DATABASE_NAME = "seniorDesignTesting"
 COLLECTION_NAME = "sendAndRecievePlantInfoTest"
+IMAGES_COLLECTION_NAME ="image_db"
+
+#upload folder
+UPLOAD_FOLDER="../images"
 
 #file storage system for mongo
 client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
-
-# Local/OneDrive folder for uploads:
-UPLOAD_FOLDER = r"C:\Users\frost\OneDrive - The Pennsylvania State University\2024_drone_images\purple_loosestrife\07-17-2024"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
@@ -228,8 +229,8 @@ def run_inference_and_save():
     #     flash("Please log in to access this page.")
     #     return redirect(url_for("auth.login"))
     if "user" not in session:
-                flash("Please log in to access this page.")
-                return redirect(url_for("auth.login"))
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
 
     if "file" not in request.files:
         return jsonify({"error": "No file part in request"}), 400
@@ -342,6 +343,64 @@ def run_inference_and_save():
         return jsonify({"message": f"Saved {inserted_count} results to the database"})
 
     return jsonify({"error": "No valid results to save"}), 400
+
+@bp.route("/upload_images", methods=["POST"])
+def upload_images():
+    if "user" not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in request"}), 400
+
+    files = request.files.getlist("file")  # Handle multiple files
+
+    if not files:
+        return jsonify({"error": "No files selected"}), 400
+
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[IMAGES_COLLECTION_NAME]
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder_path = os.path.join(UPLOAD_FOLDER, timestamp)
+
+    # Create a new folder for this upload batch
+    os.makedirs(folder_path, exist_ok=True)
+
+    inserted_count=0
+    
+    for file in files:
+        if file.filename == "":
+            continue
+
+        if not file or not allowed_file(file.filename):
+            continue
+
+        # save to directory
+        filepath=os.path.join(folder_path, file.filename)
+        file.save(filepath)
+
+        #store metadata in mongoDB
+        file_id = secure_filename(file.filename)
+        image_metadata = {
+            "filename": str(file_id),
+            "upload_date": str(timestamp),
+            "filepath": filepath
+        }
+        insert_result = collection.insert_one(image_metadata)
+
+        if insert_result.inserted_id:
+            inserted_count+=1
+   
+    # return message to client
+    if inserted_count>0:
+        return jsonify({"message": f"Saved {inserted_count} images to be processed."})
+
+    return jsonify({"error": "No valid results to save"}), 400
+
+        
+
+    
 
 @bp.route("/saveResults", methods=["POST"])
 # @login_required
