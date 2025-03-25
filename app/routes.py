@@ -18,19 +18,6 @@ import gridfs  # storing and retrieving the images in MongoDB
 
 bp = Blueprint("main", __name__)
 
-from functools import wraps
-
-# def login_required(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         # If the user is not in session, redirect to the login page
-#         if "user" not in session:
-#             flash("Please log in to access this page.")
-#             return redirect(url_for("auth.login"))
-#         return f(*args, **kwargs)
-#     return decorated_function
-
-
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
@@ -59,7 +46,6 @@ model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
 
-# @login_required
 def connect_to_mongodb():
 
     """Connects to MongoDB and returns a client."""
@@ -99,7 +85,6 @@ def convert_to_degrees(value, ref_tag):
 #MAPBOX
 
 @bp.route("/", endpoint="index")
-# @login_required
 def index():
     if "user" not in session:
              flash("Please log in to access this page.")
@@ -129,7 +114,6 @@ def get_images():
 
 
 @bp.route("/getImage/<file_id>", methods=["GET"])
-# @login_required
 def get_image(file_id):
     
     """Retrieve and serve an image stored in MongoDB GridFS."""
@@ -152,10 +136,6 @@ def get_image(file_id):
 
 @bp.route("/runInference", methods=["GET", "POST"])
 def run_inference():
-    # Manually enforce login
-    # if not session.get("user"):
-    #     flash("Please log in to access this page.")
-    #     return redirect(url_for("auth.login"))
     if "user" not in session:
                 flash("Please log in to access this page.")
                 return redirect(url_for("auth.login"))
@@ -223,10 +203,6 @@ def run_inference():
 
 @bp.route("/runInferenceAndSaveResults", methods=["POST"])
 def run_inference_and_save():
-    # Manually enforce login
-    # if not session.get("user"):
-    #     flash("Please log in to access this page.")
-    #     return redirect(url_for("auth.login"))
     if "user" not in session:
                 flash("Please log in to access this page.")
                 return redirect(url_for("auth.login"))
@@ -344,7 +320,6 @@ def run_inference_and_save():
     return jsonify({"error": "No valid results to save"}), 400
 
 @bp.route("/saveResults", methods=["POST"])
-# @login_required
 def save_results():
     if "user" not in session:
              flash("Please log in to access this page.")
@@ -449,7 +424,6 @@ def save_results():
 
 
 @bp.route("/exportData")
-# @login_required
 def export_Data():
     if "user" not in session:
              flash("Please log in to access this page.")
