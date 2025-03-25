@@ -361,7 +361,7 @@ def upload_images():
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[IMAGES_COLLECTION_NAME]
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
     folder_path = os.path.join(UPLOAD_FOLDER, timestamp)
 
     # Create a new folder for this upload batch
@@ -377,13 +377,14 @@ def upload_images():
             continue
 
         # save to directory
-        filepath=os.path.join(folder_path, file.filename)
+        filename = secure_filename(file.filename)
+        filepath=os.path.join(folder_path, filename)
         file.save(filepath)
 
         #store metadata in mongoDB
         file_id = secure_filename(file.filename)
         image_metadata = {
-            "filename": str(file_id),
+            "filename": str(filename),
             "upload_date": str(timestamp),
             "filepath": filepath
         }
@@ -394,6 +395,7 @@ def upload_images():
    
     # return message to client
     if inserted_count>0:
+        print(f"Saved {inserted_count} images into the folder: {folder_path}")
         return jsonify({"message": f"Saved {inserted_count} images to be processed."})
 
     return jsonify({"error": "No valid results to save"}), 400
