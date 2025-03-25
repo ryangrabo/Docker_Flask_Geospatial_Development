@@ -149,12 +149,12 @@ def process_images():
         if length > 0:
             logging.info(f"Found {length} unprocessed images.")
 
-        #logging.info(query_results)
+            #logging.info(query_results)
 
-        for doc in query_results:
-            id = str(doc["_id"])
-            logging.info(f"To be processed: Object ID: {id}")
-            process_image(id)
+            for doc in query_results:
+                id = str(doc["_id"])
+                logging.info(f"To be processed: Object ID: {id}")
+                process_image(id)
 
         time.sleep(WAIT_INTERVAL)
         
