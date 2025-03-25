@@ -39,10 +39,6 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
 DATABASE_NAME = "seniorDesignTesting"
 COLLECTION_NAME = "sendAndRecievePlantInfoTest"
-IMAGES_COLLECTION_NAME ="image_db"
-
-#upload folder
-UPLOAD_FOLDER="../images"
 
 #file storage system for mongo
 client = MongoClient(MONGO_URI)  # Connect to MongoDB
@@ -324,44 +320,29 @@ def upload_images():
 
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
-    collection = db[IMAGES_COLLECTION_NAME]
-    timestamp = datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
-    folder_path = os.path.join(UPLOAD_FOLDER, timestamp)
-
-    # Create a new folder for this upload batch
-    os.makedirs(folder_path, exist_ok=True)
-
+    collection = db[COLLECTION_NAME]
     inserted_count=0
-    
+    start_time = time.perf_counter()
+
     for file in files:
         if file.filename == "":
             continue
 
         if not file or not allowed_file(file.filename):
             continue
-
-        # save to directory
+        
         filename = secure_filename(file.filename)
-        filepath=os.path.join(folder_path, filename)
-        file.save(filepath)
 
-        #store metadata in mongoDB
-        file_id = secure_filename(file.filename)
-        image_metadata = {
-            "filename": str(filename),
-            "upload_date": str(timestamp),
-            "filepath": filepath
-        }
-        insert_result = collection.insert_one(image_metadata)
+        # Save file to MongoDB GridFS
+        file_id = fs.put(file, filename=filename, metadata={"processed": False})
+        logging.info(f"Saved to MongoDB with ID: {file_id}")
 
-        if insert_result.inserted_id:
+        if file_id:
             inserted_count+=1
-
-    process_folder(folder_path)
    
     # return message to client
     if inserted_count>0:
-        logging.info(f"Saved {inserted_count} images into the folder: {folder_path}")
+        logging.info(f"Saved {inserted_count} images into the DB")
         return jsonify({"message": f"Saved {inserted_count} images to be processed."})
 
     return jsonify({"error": "No valid results to save"}), 400
