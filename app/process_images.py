@@ -18,6 +18,8 @@ from PIL import Image  #  working with images in Python
 #setup logging
 logging.basicConfig(level=logging.INFO)
 
+WAIT_INTERVAL=0.5
+
 # Offsets for drone error:
 LATITUDE_OFFSET = 0.00004
 LONGITUDE_OFFSET = 0.00
@@ -33,6 +35,7 @@ COLLECTION_NAME = "sendAndRecievePlantInfoTest"
 client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
+fs_files = db["fs.files"]
 
 #load model
 model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
@@ -45,7 +48,11 @@ collection = db[COLLECTION_NAME]
 def process_image(file_id):
     #first, check if the image is in image_db
     # Retrieve the image from MongoDB
-    retrieved_file = fs.get(ObjectId(file_id))
+    try:
+        retrieved_file = fs.get(ObjectId(file_id))
+    except Exception as e:
+        logging.info(f"Unable to access id {file_id}.\nError: {e}")
+    
     file_bytes = retrieved_file.read()
     image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
     image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
@@ -111,32 +118,33 @@ def process_image(file_id):
         "geometry": geometry
     }
 
-    # save results in MongoDB
+    # save results in MongoDB immediately in the loop
     insert_result = collection.insert_one(geojson_result)
+    fs_files.update_one({"_id": file_id}, {"$set": {"metadata.processed": True}})
+
     if insert_result.inserted_id:
-        logging.info(f"Saved {image_path} with ID: {insert_result.inserted_id}")
-        return f"Saved {image_path} with ID: {insert_result.inserted_id}"
+        logging.info(f"Saved results with id: {insert_result.inserted_id}")
+        return f"Saved results with id: {insert_result.inserted_id}"
 
-    return f"Error: unable to save to DB"
+    return "error: unable to save to DB"
 
-def process_folder(folder_path):
+def process_images():
     """
-    Processes a folder of images by inferencing, getting location metadata, and storing results in the DB
-    :param folder_path: path to the folder
-    :return: NULL
+    Runs a loop that queries DB based on an interval
+    Processes any images that it find that are unprocessed
     """
-    start_time = time.perf_counter()
+    while True:
+        #logging.info(f"Process images PID: {os.getpid()}")
+        query_results = list(fs_files.find({"metadata.processed": False}).batch_size(50))  # Convert cursor to list
+        length = len(query_results)
+        logging.info(f"Found {length} unprocessed images.")
 
-    image_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path)]
+        #logging.info(query_results)
 
-    for file in image_files:
-        process_image(file)
+        for doc in query_results:
+            id = str(doc["_id"])
+            logging.info(f"To be processed: Object ID: {id}")
+            process_image(id)
 
-    end_time = time.perf_counter()
-    elapsed_time = round(end_time - start_time, 4)
-    logging.info(f"Total process Time for the folder: {elapsed_time:.4f} seconds.")
-
-
-if __name__ == "__main__":
-    folder_path = sys.argv[1]  # Get folder path from command line argument
-    process_folder(folder_path)
+        time.sleep(10)
+        

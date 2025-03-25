@@ -15,8 +15,11 @@ import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
 from app.utils import convert_to_degrees, allowed_file, connect_to_mongodb
-from app.process_images import process_folder
-#import gc  # Add this at the top
+import threading
+from app.process_images import process_images
+
+#create worker to query DB regularly and check for unprocessed images:
+threading.Thread(target=process_images, daemon=True).start()
 
 bp = Blueprint("main", __name__)
 
