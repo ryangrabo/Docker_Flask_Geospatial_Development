@@ -29,10 +29,6 @@ client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
 
-# Local/OneDrive folder for uploads:
-UPLOAD_FOLDER = r"C:\Users\frost\OneDrive - The Pennsylvania State University\2024_drone_images\purple_loosestrife\07-17-2024"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
 # Offsets for drone error:
