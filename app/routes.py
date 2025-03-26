@@ -23,19 +23,6 @@ threading.Thread(target=process_images, daemon=True).start()
 
 bp = Blueprint("main", __name__)
 
-from functools import wraps
-
-# def login_required(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         # If the user is not in session, redirect to the login page
-#         if "user" not in session:
-#             flash("Please log in to access this page.")
-#             return redirect(url_for("auth.login"))
-#         return f(*args, **kwargs)
-#     return decorated_function
-
-
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
@@ -62,7 +49,6 @@ logging.basicConfig(level=logging.INFO)
 #MAPBOX
 
 @bp.route("/", endpoint="index")
-# @login_required
 def index():
     if "user" not in session:
              flash("Please log in to access this page.")
@@ -92,7 +78,6 @@ def get_images():
 
 
 @bp.route("/getImage/<file_id>", methods=["GET"])
-# @login_required
 def get_image(file_id):
     
     """Retrieve and serve an image stored in MongoDB GridFS."""
@@ -115,10 +100,6 @@ def get_image(file_id):
 
 @bp.route("/runInference", methods=["GET", "POST"])
 def run_inference():
-    # Manually enforce login
-    # if not session.get("user"):
-    #     flash("Please log in to access this page.")
-    #     return redirect(url_for("auth.login"))
     if "user" not in session:
                 flash("Please log in to access this page.")
                 return redirect(url_for("auth.login"))
@@ -233,7 +214,6 @@ def upload_images():
     
 
 @bp.route("/saveResults", methods=["POST"])
-# @login_required
 def save_results():
     if "user" not in session:
              flash("Please log in to access this page.")
@@ -338,7 +318,6 @@ def save_results():
 
 
 @bp.route("/exportData")
-# @login_required
 def export_Data():
     if "user" not in session:
              flash("Please log in to access this page.")
