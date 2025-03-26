@@ -7,7 +7,7 @@ import pymongo  # I use this for additional MongoDB functionality when needed
 from app.utils import convert_to_degrees, connect_to_mongodb
 import exifread  # I use this to read EXIF data from images
 from pymongo import MongoClient  # I use this to connect to MongoDB databases
-from flask import Blueprint, render_template, jsonify, request, redirect, url_for, send_file, abort, Flask, Response, redirect, flash, session  # I use these Flask utilities for creating views, rendering templates, sending files, etc.
+from flask import Blueprint, render_template, request, redirect, url_for, send_file, abort, Flask, Response, redirect, flash, session  # I use these Flask utilities for creating views, rendering templates, sending files, etc.
 import gridfs  # storing and retrieving the images in MongoDB
 from bson import ObjectId, Binary  # I use these for handling MongoDB object IDs and binary data
 from io import BytesIO  # creating in-memory streams for file-like operations
@@ -46,12 +46,18 @@ db = client[DATABASE_NAME]
 collection = db[COLLECTION_NAME]
 
 def process_image(file_id):
+    """
+    Process an image and store results in the collection
+    :param file_id: string of the file_id of the object from fs.files
+    :return: returns info if it was completed or not
+    """
     #first, check if the image is in image_db
     # Retrieve the image from MongoDB
     try:
         retrieved_file = fs.get(ObjectId(file_id))
     except Exception as e:
         logging.error(f"Unable to access id {file_id}.\nError: {e}")
+        return f"Unable to access id {file_id}.\nError: {e}"
     
     file_bytes = retrieved_file.read()
     image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
@@ -126,10 +132,10 @@ def process_image(file_id):
         {"$set": {"metadata.processed": True}}
     )
 
-    if update_result.modified_count == 0:
-        logging.warning(f"Failed to update metadata for file_id {file_id}")
-    else:
-        logging.info(f"Marked file {file_id} as processed.")
+    # if update_result.modified_count == 0:
+    #     logging.warning(f"Failed to update metadata for file_id {file_id}")
+    # else:
+    #     logging.info(f"Marked file {file_id} as processed.")
 
     if insert_result.inserted_id:
         logging.info(f"Saved results with id: {insert_result.inserted_id}")
@@ -155,6 +161,9 @@ def process_images():
                 id = str(doc["_id"])
                 logging.info(f"To be processed: Object ID: {id}")
                 process_image(id)
+            
+            #continue to next iteration instead of waiting, because there may be more images then were found in the initial query
+            continue
 
         time.sleep(WAIT_INTERVAL)
         
