@@ -9,6 +9,7 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv('SECRET_KEY')
     app.config['PREFERRED_URL_SCHEME'] = 'https'
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB
 
 
     # Trust the X-Forwarded-* headers coming from Nginx

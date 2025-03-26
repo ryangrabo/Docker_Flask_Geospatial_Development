@@ -427,8 +427,9 @@ async function upload() {
 
 document.getElementById("uploadButton").addEventListener("click", function(event) {
     event.preventDefault();
-    upload();
+    uploadInChunks();
 });
+
 
 
 function updateMapMarkers() {
@@ -473,6 +474,77 @@ function drop(ev) {
 
 
 document.getElementById("fileInput").addEventListener("change", updateFileCount);
+
+const MAX_BATCH_SIZE = 5 * 1024 * 1024 * 1024; // 5GB in bytes
+
+async function uploadInChunks() {
+    const fileInput = document.getElementById("fileInput");
+    const files = Array.from(fileInput.files);
+
+    if (files.length === 0) {
+        alert("Please select files first.");
+        return;
+    }
+
+    // Divide files into chunks
+    let batches = [];
+    let currentBatch = [];
+    let currentSize = 0;
+
+    for (const file of files) {
+        if (file.size > MAX_BATCH_SIZE) {
+            alert(`File "${file.name}" exceeds 5GB and cannot be uploaded.`);
+            return;
+        }
+
+        if (currentSize + file.size > MAX_BATCH_SIZE) {
+            batches.push(currentBatch);
+            currentBatch = [];
+            currentSize = 0;
+        }
+
+        currentBatch.push(file);
+        currentSize += file.size;
+    }
+
+    if (currentBatch.length > 0) {
+        batches.push(currentBatch);
+    }
+
+    // Upload each batch sequentially
+    for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        const formData = new FormData();
+
+        for (const file of batch) {
+            formData.append("file", file);
+        }
+
+        try {
+            console.log(`Uploading batch ${i + 1} of ${batches.length}...`);
+            const response = await fetch("/upload_images", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed for batch ${i + 1}`);
+            }
+
+            const result = await response.json();
+            console.log(`Batch ${i + 1}: ${result.message}`);
+        } catch (error) {
+            console.error(`Error uploading batch ${i + 1}:`, error);
+            alert(`Error uploading batch ${i + 1}. Check console.`);
+            return;
+        }
+    }
+
+    alert("All batches uploaded successfully.");
+    fileInput.value = "";
+    updateFileCount();
+    updateMapMarkers();
+}
 
   </script>
 </body>

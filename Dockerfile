@@ -21,7 +21,11 @@ COPY requirements.lock ./
 RUN pip install --upgrade pip
 #RUN pip install --no-cache-dir -r requirements.txt
 #RUN pip install -r requirements.txt
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+#RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+#RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+COPY wheels/ /wheels/
+RUN pip install --no-cache-dir /wheels/*
+
 RUN pip install --no-cache-dir -r requirements.lock
 
 
@@ -35,5 +39,5 @@ COPY .env .env
 EXPOSE 5000
 
 # Start Gunicorn with the correct entry point
-CMD ["gunicorn", "--preload", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "120", "application:create_app()"]
+CMD ["gunicorn", "--preload", "-b", "0.0.0.0:5000", "-w", "4", "--timeout", "1200", "application:create_app()"]
 
