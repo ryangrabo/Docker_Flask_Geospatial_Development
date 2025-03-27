@@ -68,7 +68,8 @@ def process_image(file_id):
         
     # Run YOLO inference
     result = model.predict(image_data, verbose=False)[0]
-
+    #result = model.predict(image_data, verbose=False, device=0)
+    
     # Save raw YOLO results to CSV
     raw_csv_path = os.path.join(os.getcwd(), "app", "raw_yolo_results_cpu.csv")
     with open(raw_csv_path, "a") as f:

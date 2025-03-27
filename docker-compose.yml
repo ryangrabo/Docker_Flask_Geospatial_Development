@@ -20,6 +20,13 @@ services:
       - ~/.cache/pip:/root/.cache/pip #use cache to grab libraries
     networks:
       - flask_network  # Ensures Flask can talk to MongoDB
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   mongodbtest:
     image: mongo:6.0
