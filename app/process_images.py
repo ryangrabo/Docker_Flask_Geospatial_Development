@@ -65,7 +65,8 @@ def process_image(file_id):
         
     # Run YOLO inference
     result = model.predict(image_data, verbose=False)[0]
-
+    #result = model.predict(image_data, verbose=False, device=0)
+    
     # get results
     top_index = result.probs.top1  # Get top prediction index
     top_class = result.names[top_index]  # Get class name
