@@ -9,6 +9,12 @@ You need to install docker engine and docker desktop
 ### install mongodb
 You need to install mongodb
 
+
+## install wheels for big library
+'''bash
+mkdir wheels
+pip download torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 -d wheels
+'''
 ## Create Docker Container
 ### build the docker container
 ```bash
