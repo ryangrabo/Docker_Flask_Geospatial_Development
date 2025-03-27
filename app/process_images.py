@@ -14,6 +14,9 @@ from io import BytesIO  # creating in-memory streams for file-like operations
 import numpy as np  # numerical operations (like array handling)
 import cv2  # image manipulation with OpenCV
 from PIL import Image  #  working with images in Python
+import csv
+from datetime import datetime
+
 
 #setup logging
 logging.basicConfig(level=logging.INFO)
@@ -66,13 +69,20 @@ def process_image(file_id):
     # Run YOLO inference
     result = model.predict(image_data, verbose=False)[0]
 
+    # Save raw YOLO results to CSV
+    raw_csv_path = os.path.join(os.getcwd(), "app", "raw_yolo_results_cpu.csv")
+    with open(raw_csv_path, "a") as f:
+        csv_data = result.to_csv(normalize=False, decimals=5)
+        if csv_data:  # Only write if there's something to write
+            f.write(csv_data)
+
     # get results
     top_index = result.probs.top1  # Get top prediction index
     top_class = result.names[top_index]  # Get class name
     probabilities = result.probs.data.tolist()  # Get probabilities
 
     #low probability flag
-    if top_index < .85 :
+    if probabilities[top_index] < .85 :
         low_prob = 1
     else :
         low_prob = 0
