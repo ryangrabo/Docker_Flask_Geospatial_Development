@@ -72,7 +72,7 @@ def process_image(file_id):
     probabilities = result.probs.data.tolist()  # Get probabilities
 
     #low probability flag
-    if top_index < .85 :
+    if probabilities[top_index] < .85 :
         low_prob = 1
     else :
         low_prob = 0
