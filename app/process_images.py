@@ -70,6 +70,12 @@ def process_image(file_id):
     top_index = result.probs.top1  # Get top prediction index
     top_class = result.names[top_index]  # Get class name
     probabilities = result.probs.data.tolist()  # Get probabilities
+
+    #low probability flag
+    if top_index < .85 :
+        low_prob = 1
+    else :
+        low_prob = 0
             
     # Extract EXIF metadata
     stream = BytesIO(file_bytes)
@@ -117,6 +123,7 @@ def process_image(file_id):
             "none_prob": probabilities[1],
             "phragmites_prob": probabilities[2],
             "purple_loosestrife_prob": probabilities[3],
+            "low_prob": low_prob,
             "file_id": str(file_id),
             "yaw": yaw,
             "msl_alt": altitude_meters,
