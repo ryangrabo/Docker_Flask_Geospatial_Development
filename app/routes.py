@@ -24,7 +24,7 @@ threading.Thread(target=process_images, daemon=True).start()
 bp = Blueprint("main", __name__)
 
 # Use the Docker service name when running inside Docker
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://0.0.0.0:27017/")
 
 DATABASE_NAME = "seniorDesignTesting"
 COLLECTION_NAME = "sendAndRecievePlantInfoTest"

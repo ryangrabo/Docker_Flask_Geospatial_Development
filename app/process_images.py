@@ -67,16 +67,10 @@ def process_image(file_id):
     image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
         
     # Run YOLO inference
-    result = model.predict(image_data, verbose=False)[0]
-    #result = model.predict(image_data, verbose=False, device=0)[0]
+    #result = model.predict(image_data, verbose=False)[0]
+    result = model.predict(image_data, verbose=False, device=0)[0]
     
-    # Save raw YOLO results to CSV
-    # raw_csv_path = os.path.join(os.getcwd(), "app", "raw_yolo_results_cpu.csv")
-    # with open(raw_csv_path, "a") as f:
-    #     csv_data = result.to_csv(normalize=False, decimals=5)
-    #     if csv_data:  # Only write if there's something to write
-    #         f.write(csv_data)
-
+ 
     # get results
     top_index = result.probs.top1  # Get top prediction index
     top_class = result.names[top_index]  # Get class name
@@ -138,12 +132,11 @@ def process_image(file_id):
             "file_id": str(file_id),
             "yaw": yaw,
             "msl_alt": altitude_meters,
-            "total_inference": total_inference,
-            "inference": result.speed['inference'],
-            "preprocess": result.speed['preprocess'],
-            "postprocess": result.speed['postprocess'],
-            "timestamp": datetime.now().isoformat(),
-            "results_summary": result.summary(),
+            # "total_inference": total_inference,
+            # "inference": result.speed['inference'],
+            # "preprocess": result.speed['preprocess'],
+            # "postprocess": result.speed['postprocess'],
+            # "timestamp": datetime.now().isoformat(),
         },
         "geometry": geometry
     }
