@@ -10,9 +10,9 @@ services:
       - MONGO_URI=mongodb://mongodbtest:27017/seniorDesignTesting  # Ensures Flask connects to MongoDB in Docker
       - FLASK_ENV=development  # Enables debug mode (for hot-reloading)
       - FLASK_RUN_EXTRA_FILES=1  # Required for detecting changes
-      - AZURE_CLIENT_ID = ${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET = ${AZURE_CLIENT_SECRET}
-      - AZURE_TENANT_ID = ${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
     ports:
       - "5000:5000"
     volumes:

@@ -14,22 +14,14 @@ import cv2  # image manipulation with OpenCV
 import numpy as np  # numerical operations (like array handling)
 from PIL import Image  #  working with images in Python
 import gridfs  # storing and retrieving the images in MongoDB
-#import gc  # Add this at the top
+from app.utils import convert_to_degrees, allowed_file, connect_to_mongodb
+import threading
+from app.process_images import process_images
+
+#create worker to query DB regularly and check for unprocessed images:
+threading.Thread(target=process_images, daemon=True).start()
 
 bp = Blueprint("main", __name__)
-
-from functools import wraps
-
-# def login_required(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         # If the user is not in session, redirect to the login page
-#         if "user" not in session:
-#             flash("Please log in to access this page.")
-#             return redirect(url_for("auth.login"))
-#         return f(*args, **kwargs)
-#     return decorated_function
-
 
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
@@ -42,12 +34,6 @@ client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
 fs = gridfs.GridFS(db)  
 
-# Local/OneDrive folder for uploads:
-UPLOAD_FOLDER = r"C:\Users\frost\OneDrive - The Pennsylvania State University\2024_drone_images\purple_loosestrife\07-17-2024"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
-
 # Offsets for drone error:
 LATITUDE_OFFSET = 0.00004
 LONGITUDE_OFFSET = 0.00
@@ -59,47 +45,10 @@ model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
 
-# @login_required
-def connect_to_mongodb():
-
-    """Connects to MongoDB and returns a client."""
-    if "user" not in session:
-             flash("Please log in to access this page.")
-             return redirect(url_for("auth.login"))
-    client = MongoClient(MONGO_URI)
-    # Quick test to ensure we can ping the server
-    client.admin.command("ping")
-    print("Connected successfully to MongoDB")
-    return client
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def convert_to_degrees(value, ref_tag):
-    """
-    Converts the GPS coordinates stored in the EXIF to degrees in float format.
-    :param value: EXIF GPS coordinate value.
-    :param ref_tag: EXIF GPS reference tag (e.g., 'N', 'S', 'E', 'W').
-    :return: GPS coordinate in degrees (float) or None if conversion fails.
-    """
-    try:
-        d = value.values[0].num / value.values[0].den
-        m = value.values[1].num / value.values[1].den
-        s = value.values[2].num / value.values[2].den
-        result = d + (m / 60.0) + (s / 3600.0)
-        if ref_tag and ref_tag.values[0] in ['S', 'W']:
-            result = -result
-        return result
-    except Exception as e:
-        logging.error(f"Error converting GPS value: {e}")
-        return None
 
 #MAPBOX
 
 @bp.route("/", endpoint="index")
-# @login_required
 def index():
     if "user" not in session:
              flash("Please log in to access this page.")
@@ -129,7 +78,6 @@ def get_images():
 
 
 @bp.route("/getImage/<file_id>", methods=["GET"])
-# @login_required
 def get_image(file_id):
     
     """Retrieve and serve an image stored in MongoDB GridFS."""
@@ -152,10 +100,6 @@ def get_image(file_id):
 
 @bp.route("/runInference", methods=["GET", "POST"])
 def run_inference():
-    # Manually enforce login
-    # if not session.get("user"):
-    #     flash("Please log in to access this page.")
-    #     return redirect(url_for("auth.login"))
     if "user" not in session:
                 flash("Please log in to access this page.")
                 return redirect(url_for("auth.login"))
@@ -185,7 +129,7 @@ def run_inference():
 
         # Save file to MongoDB GridFS
         file_id = fs.put(file, filename=filename)
-        print(f"Saved to MongoDB with ID: {file_id}")
+        logging.info(f"Saved to MongoDB with ID: {file_id}")
 
         # Retrieve the image from MongoDB
         retrieved_file = fs.get(file_id)
@@ -221,15 +165,12 @@ def run_inference():
         "elapsed_time": elapsed_time
     })
 
-@bp.route("/runInferenceAndSaveResults", methods=["POST"])
-def run_inference_and_save():
-    # Manually enforce login
-    # if not session.get("user"):
-    #     flash("Please log in to access this page.")
-    #     return redirect(url_for("auth.login"))
+
+@bp.route("/upload_images", methods=["POST"])
+def upload_images():
     if "user" not in session:
-                flash("Please log in to access this page.")
-                return redirect(url_for("auth.login"))
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
 
     if "file" not in request.files:
         return jsonify({"error": "No file part in request"}), 400
@@ -255,96 +196,24 @@ def run_inference_and_save():
         filename = secure_filename(file.filename)
 
         # Save file to MongoDB GridFS
-        file_id = fs.put(file, filename=filename)
-        print(f"Saved to MongoDB with ID: {file_id}")
+        file_id = fs.put(file, filename=filename, metadata={"processed": False})
+        logging.info(f"Saved to MongoDB with ID: {file_id}")
 
-        # Retrieve the image from MongoDB
-        retrieved_file = fs.get(ObjectId(file_id))
-        file_bytes = retrieved_file.read()
-        image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
-        image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
-        
-        # Run YOLO inference
-        results = model.predict(image_data, verbose=False)
-
-        # get results
-        top_index = results[0].probs.top1  # Get top prediction index
-        top_class = results[0].names[top_index]  # Get class name
-        probabilities = results[0].probs.data.tolist()  # Get probabilities
-            
-        # Extract EXIF metadata
-        stream = BytesIO(file_bytes)
-        tags = exifread.process_file(stream, details=False)
-
-        # Extract GPS data
-        lat, lon = None, None
-        try:
-            if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
-                lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
-                lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
-                lat = lat - LATITUDE_OFFSET if lat is not None else None
-                lon = lon - LONGITUDE_OFFSET if lon is not None else None
-        except Exception as e:
-            logging.error(f"GPS extraction failed for file_id {file_id}: {e}")
-
-        # Extract image direction (yaw) if available
-        yaw = "Unknown"
-        try:
-            if 'GPS GPSImgDirection' in tags:
-                direction = tags['GPS GPSImgDirection'].values[0]
-                yaw = float(direction.num) / float(direction.den)
-        except Exception:
-            yaw = "Unknown"
-
-        # Extract altitude (meters) if available
-        altitude_meters = None
-        try:
-            if 'GPS GPSAltitude' in tags:
-                altitude = tags['GPS GPSAltitude'].values[0]
-                altitude_meters = float(altitude.num) / float(altitude.den)
-        except Exception:
-            altitude_meters = None
-
-        # Ensure geometry is valid
-        geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
-
-        # Create GeoJSON formatted result
-        geojson_result = {
-            "type": "Feature",
-            "properties": {
-                "filename": file.filename,
-                "predicted_class": top_class,
-                "narrowleaf_cattail_prob": probabilities[0],
-                "none_prob": probabilities[1],
-                "phragmites_prob": probabilities[2],
-                "purple_loosestrife_prob": probabilities[3],
-                "file_id": str(file_id),
-                "yaw": yaw,
-                "msl_alt": altitude_meters,
-            },
-            "geometry": geometry
-        }
-
-        # save results in MongoDB immediately in the loop
-        insert_result = collection.insert_one(geojson_result)
-        if insert_result.inserted_id:
+        if file_id:
             inserted_count+=1
-
-        # **Memory Cleanup**
-        #del image_data, file_bytes, stream, retrieved_file, results, geojson_result, tags
-        #gc.collect()  # Force garbage collection
-
-    end_time = time.perf_counter()
-    elapsed_time = round(end_time - start_time, 4)
-
+   
     # return message to client
     if inserted_count>0:
-        return jsonify({"message": f"Saved {inserted_count} results to the database"})
+        logging.info(f"Saved {inserted_count} images into the DB")
+        return jsonify({"message": f"Saved {inserted_count} images to be processed."})
 
     return jsonify({"error": "No valid results to save"}), 400
 
+        
+
+    
+
 @bp.route("/saveResults", methods=["POST"])
-# @login_required
 def save_results():
     if "user" not in session:
              flash("Please log in to access this page.")
@@ -449,7 +318,6 @@ def save_results():
 
 
 @bp.route("/exportData")
-# @login_required
 def export_Data():
     if "user" not in session:
              flash("Please log in to access this page.")
