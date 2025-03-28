@@ -125,6 +125,69 @@
 #dropZone:hover {
     background-color: #f0f0f0;
 }
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    .main-content {
+        margin-left: 220px;
+    }
+}
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .main-content {
+        margin-left: 220px;
+    }
+
+    .controls {
+        left: 220px;
+        right: auto;
+        width: calc(100% - 220px);
+        top: 0;
+        padding: 10px;
+    }
+
+    #map {
+        height: calc(100vh - 120px); /* make space for controls */
+    }
+}
+
+@media (max-width: 600px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .sidebar button {
+        width: 90%;
+        margin: 5px 0;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 10px;
+    }
+
+    .controls {
+        position: relative;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin-top: 10px;
+        z-index: 2;
+    }
+
+    #map {
+        height: 60vh;
+    }
+}
 
   </style>
 </head>
