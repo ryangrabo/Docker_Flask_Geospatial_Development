@@ -72,3 +72,5 @@ run -p 5000:5000 flask_app
  **Session Handling:** Stores user info securely using Flask’s session.  
  **Confidential Authentication:** Uses client secret, meaning it is suitable for server-side applications.  
  **No Excessive Permissions:** `SCOPE = []`, meaning no personal user info is accessed.
+
+ # hi there-ziek
