@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Categorize Low Probability Images</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+
+    .sidebar {
+      height: 100%;
+      width: 200px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-color: #333;
+      padding-top: 20px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+    }
+
+    .sidebar button {
+      width: 80%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: none;
+      background-color: #555;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .sidebar button:hover {
+      background-color: #777;
+    }
+
+    .main-content {
+      margin-left: 220px;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+
+    .image-container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .image-container img {
+      width: 300px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .category-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .category-btn:hover {
+      background-color: #45a049;
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 30px;
+      color: #008CBA;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding: 10px;
+      }
+
+      .sidebar button {
+        width: 90%;
+        margin: 5px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Menu</h2>
+    <button onclick="location.href='/'">Back to Map</button>
+    <p id="lowProbNotice">Checking for low probability images...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>Categorize Low Probability Images</h1>
+
+    {% if images %}
+      {% for image in images %}
+      <div class="image-container">
+        <img src="{{ url_for('main.get_image', file_id=image.file_id) }}" alt="{{ image.filename }}" onclick="showPreview('/getImage/${image.file_id}')">
+        <div class="buttons">
+          <form method="POST" action="{{ url_for('main.categorize_images') }}">
+            <input type="hidden" name="filename" value="{{ image.filename }}">
+            <button type="submit" name="category" value="phragmites" class="category-btn">Phragmites</button>
+            <button type="submit" name="category" value="narrowleaf_cattail" class="category-btn">Narrowleaf Cattail</button>
+            <button type="submit" name="category" value="purple_loosestrife" class="category-btn">Purple Loosestrife</button>
+            <button type="submit" name="category" value="none" class="category-btn">Native Plant</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="text-align:center;">No low probability images to review.</p>
+    {% endif %}
+
+    <a href="{{ url_for('main.index') }}">&larr; Back to Map</a>
+  </div>
+
+  <script>
+    async function fetchLowProbCount() {
+      try {
+        const response = await fetch('/numLowProbimages');
+        const data = await response.json();
+        const count = data.num_low_prob;
+        const notice = document.getElementById('lowProbNotice');
+
+        if (count > 0) {
+          notice.innerHTML = `<strong>${count}</strong> low confidence images left`;
+        } else {
+          notice.innerHTML = "No low confidence images to review.";
+        }
+      } catch (err) {
+        document.getElementById('lowProbNotice').innerText = "Error checking low probability images.";
+        console.error(err);
+      }
+    }
+
+    function showPreview(imageUrl) {
+      const modal = document.createElement("div");
+      modal.style.position = "fixed";
+      modal.style.top = "0";
+      modal.style.left = "0";
+      modal.style.width = "100%";
+      modal.style.height = "100%";
+      modal.style.background = "rgba(0, 0, 0, 0.8)";
+      modal.style.display = "flex";
+      modal.style.alignItems = "center";
+      modal.style.justifyContent = "center";
+      modal.style.zIndex = "1000";
+
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.style.maxWidth = "90%";
+      img.style.maxHeight = "90%";
+      img.style.border = "5px solid white";
+      img.style.borderRadius = "8px";
+
+      modal.appendChild(img);
+      document.body.appendChild(modal);
+
+      modal.onclick = function () {
+        document.body.removeChild(modal);
+      };
+    }
+
+    fetchLowProbCount();
+  </script>
+</body>
+</html>
