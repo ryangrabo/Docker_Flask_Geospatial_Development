@@ -33,7 +33,7 @@
       text-align: center;
       font-family: 'Open Sans', sans-serif;
     }
-     .controls {
+    .map-controls {
       position: absolute;
       top: 10px;
       left: 210px;
@@ -42,20 +42,30 @@
       padding: 10px;
       border-radius: 4px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .filter-controls {
+      position: absolute;
+      top: 10px;
+      left: 440px;
+      z-index: 1;
+      background-color: white;
+      padding: 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     } 
     .sidebar {
-    height: 100%;
-    width: 200px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: #333;
-    padding-top: 20px;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+      height: 100%;
+      width: 200px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-color: #333;
+      padding-top: 20px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
 .sidebar h2 {
     text-align: center;
@@ -90,7 +100,11 @@
       margin-left: 270px;
       padding: 10px;
     }
-    .controls button {
+    .map-controls button {
+      margin: 2px;
+      padding: 5px 10px;
+    }
+    .filter-controls button {
       margin: 2px;
       padding: 5px 10px;
     }
@@ -142,7 +156,7 @@
         margin-left: 220px;
     }
 
-    .controls {
+    .map-controls {
         left: 220px;
         right: auto;
         width: calc(100% - 220px);
@@ -150,8 +164,16 @@
         padding: 10px;
     }
 
+    .filter-controls {
+        left: 450px;
+        right: auto;
+        width: calc(100% - 450px);
+        top: 0;
+        padding: 10px;
+    }
+
     #map {
-        height: calc(100vh - 120px); /* make space for controls */
+        height: calc(100vh - 120px); /* make space for map-controls */
     }
 }
 
@@ -175,7 +197,16 @@
         padding: 10px;
     }
 
-    .controls {
+    .map-controls {
+        position: relative;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin-top: 10px;
+        z-index: 2;
+    }
+
+    .filter-controls {
         position: relative;
         left: 0;
         top: 0;
@@ -203,7 +234,7 @@
       <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
     </div>
   </div> -->
-  <div class="controls">
+  <div class="map-controls">
     <label for="mapStyle">Map Style:</label>
     <select id="mapStyle" onchange="setMapStyle(this.value)">
       <option value="mapbox://styles/mapbox/streets-v11">Streets</option>
@@ -213,7 +244,21 @@
       <option value="mapbox://styles/mapbox/satellite-streets-v11">Satellite Streets</option>
       <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
     </select>
-  </div>  
+  </div>
+
+  <!-- Filtering Options -->
+  <div class="filter-controls">
+    <label for="filterOptions">Filters:</label>
+    <select id="filterOptions">
+      <option value="all_plants">All</option>
+      <option value="narrowleaf_cattail">Narrowleaf Cattail</option>
+      <option value="phragmites">Phragmites</option>
+      <option value="purple_loosestrife">Purple Loosestrife</option>
+      <option value="none">None</option>
+    </select>
+  </div>
+
+
 <!-- Sidebar (same style as runInference page) -->
   <div class="sidebar">
       <h2>Menu</h2>
