@@ -35,8 +35,9 @@
     }
     .map-controls {
       position: absolute;
-      top: 10px;
+      top: 120px;
       left: 210px;
+      width: 210px;
       z-index: 1;
       background-color: white;
       padding: 10px;
@@ -46,7 +47,8 @@
     .filter-controls {
       position: absolute;
       top: 10px;
-      left: 440px;
+      left: 210px;
+      width: 210px;
       z-index: 1;
       background-color: white;
       padding: 10px;
@@ -156,24 +158,24 @@
         margin-left: 220px;
     }
 
-    .map-controls {
-        left: 220px;
+    .filter-controls {
+        left: 210px;
         right: auto;
-        width: calc(100% - 220px);
+        width: 210px;
         top: 0;
         padding: 10px;
     }
 
-    .filter-controls {
-        left: 450px;
+    .map-controls {
+        left: 210px;
         right: auto;
-        width: calc(100% - 450px);
+        width: 210px;
         top: 0;
         padding: 10px;
     }
 
     #map {
-        height: calc(100vh - 120px); /* make space for map-controls */
+        height: 100vh; /* make space for map-controls */
     }
 }
 
@@ -197,15 +199,6 @@
         padding: 10px;
     }
 
-    .map-controls {
-        position: relative;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin-top: 10px;
-        z-index: 2;
-    }
-
     .filter-controls {
         position: relative;
         left: 0;
@@ -215,8 +208,17 @@
         z-index: 2;
     }
 
+    .map-controls {
+        position: relative;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin-top: 10px;
+        z-index: 2;
+    }
+
     #map {
-        height: 60vh;
+        height: 70vh;
     }
 }
 
@@ -224,16 +226,20 @@
 </head>
 <body>
  <div id="map"></div>
-  <!-- <div class="controls">
-    <div>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/light-v10')">Light</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/dark-v10')">Dark</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-v9')">Satellite</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-streets-v11')">Satellite Streets</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
-    </div>
-  </div> -->
+  
+   <!-- Filtering Options -->
+  <div class="filter-controls">
+    <input type="checkbox" id="sel_All" name="sel_All" value="all_plants">
+    <label for="sel_all">All</label><br>
+    <input type="checkbox" id="sel_narrowleaf" name="sel_narrowleaf" value="narrowleaf">
+    <label for="sel_narrowleaf">Narrowleaf Cattail</label><br>
+    <input type="checkbox" id="sel_phragmites" name="sel_phragmites" value="phragmites">
+    <label for="sel_phragmites">Phragmites</label><br>
+    <input type="checkbox" id="sel_loosestrife" name="sel_loosestrife" value="loosestrife">
+    <label for="sel_loosestrife">Purple Loosestrife</label><br>
+  </div>
+ 
+ <!-- Map Controls -->
   <div class="map-controls">
     <label for="mapStyle">Map Style:</label>
     <select id="mapStyle" onchange="setMapStyle(this.value)">
@@ -245,19 +251,6 @@
       <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
     </select>
   </div>
-
-  <!-- Filtering Options -->
-  <div class="filter-controls">
-    <label for="filterOptions">Filters:</label>
-    <select id="filterOptions">
-      <option value="all_plants">All</option>
-      <option value="narrowleaf_cattail">Narrowleaf Cattail</option>
-      <option value="phragmites">Phragmites</option>
-      <option value="purple_loosestrife">Purple Loosestrife</option>
-      <option value="none">None</option>
-    </select>
-  </div>
-
 
 <!-- Sidebar (same style as runInference page) -->
   <div class="sidebar">
