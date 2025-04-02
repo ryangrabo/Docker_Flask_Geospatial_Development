@@ -323,3 +323,70 @@ def export_Data():
              flash("Please log in to access this page.")
              return redirect(url_for("auth.login"))
     return render_template("exportData.html")
+
+@bp.route('/getLowProbImages', methods=["GET"])
+def get_low_prob_images_html():
+    if "user" not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
+
+    # Find all documents where low_prob == "1"
+    low_prob_docs = collection.find({"properties.low_prob": 1})
+
+    # Extract filenames for rendering
+    images = [{"filename": doc["properties"]["filename"],
+        "file_id": doc["properties"]["file_id"]} for doc in low_prob_docs]
+
+    return render_template("lowProbImages.html", images=images)
+
+@bp.route('/numLowProbimages')
+def get_num_low_prob_images():
+    if "user" not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
+
+    num_low_prob = collection.count_documents({"properties.low_prob": 1})
+    logging.info(f"Found {num_low_prob} low_prob images.")
+
+
+    return jsonify({"num_low_prob": num_low_prob})
+
+@bp.route("/categorize_images", methods=["POST"])
+def categorize_images():
+    if "user" not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+
+    filename = request.form.get("filename")
+    category = request.form.get("category")
+
+    if not filename or not category:
+        flash("Missing filename or category.")
+        return redirect(url_for("main.get_low_prob_images_html"))
+
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
+
+    # Update the image's predicted_class and set low_prob to "0"
+    result = collection.update_one(
+        {"properties.filename": filename},
+        {"$set": {
+            "properties.predicted_class": category,
+            "properties.low_prob": 0
+        }}
+    )
+
+    if result.modified_count > 0:
+        logging.info(f"Image {filename} updated with category '{category}'")
+    else:
+        logging.warning(f"No matching image found for {filename}")
+
+    return redirect(url_for("main.get_low_prob_images_html"))
