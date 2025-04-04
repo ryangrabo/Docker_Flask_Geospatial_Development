@@ -228,6 +228,7 @@
 <input type="file" id="fileInput" name="file" multiple style="display: none;">
 <p id="fileCount">Files to Upload: 0</p>
 <button id="uploadButton">Upload Images</button>
+<div id="progressText" style="text-align: center; margin-top: 8px;"></div>
 <progress id="uploadProgress" value="0" max="100" style="width: 100%;"></progress>
 
     </div>
@@ -451,47 +452,6 @@ function updateFileCount() {
     fileCountElement.innerText = `Files to Upload: ${fileInput.files.length}`;
 }
 
-async function upload() {
-    let formData = new FormData();
-    let fileInput = document.getElementById("fileInput");
-    let files = fileInput.files;
-
-    if (files.length === 0) {
-        alert("No files selected. Please choose images first.");
-        return;
-    }
-
-    for (let i = 0; i < files.length; i++) {
-        formData.append("file", files[i]);
-    }
-
-    try {
-        // upload
-        let response = await fetch("/upload_images", {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.statusText}`);
-        }
-
-        let saveData = await response.json();
-        alert("Upload Results: " + saveData.message);
-
-        fileInput.value = "";
-        updateFileCount(); // Refresh file count display
-
-        updateMapMarkers();
-
-        fetchLowProbCount(); 
-
-    } catch (error) {
-        console.error("Error processing images:", error);
-        alert("Failed to process images. Check console for details.");
-    }
-}
-
 
 document.getElementById("uploadButton").addEventListener("click", function(event) {
     event.preventDefault();
@@ -580,7 +540,8 @@ async function uploadInChunks() {
   }
 
   // Upload each batch sequentially
-  const progressBar = document.getElementById("uploadProgress"); // A <progress> element
+  const progressBar = document.getElementById("uploadProgress");
+  const progressText = document.getElementById("progressText");
 
   for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
@@ -593,6 +554,7 @@ async function uploadInChunks() {
       try {
           await uploadWithProgress(formData, percent => {
               progressBar.value = percent;
+              progressText.textContent = `Uploading batch ${i + 1} of ${batches.length}... ${percent}%`;
           });
 
           console.log(`Batch ${i + 1} uploaded successfully.`);
@@ -604,10 +566,11 @@ async function uploadInChunks() {
   }
 
 
-    alert("All batches uploaded successfully.");
-    fileInput.value = "";
-    updateFileCount();
-    updateMapMarkers();
+  progressText.textContent = "✅ All batches uploaded successfully.";
+  alert("All batches uploaded successfully.");
+  fileInput.value = "";
+  updateFileCount();
+  updateMapMarkers();
 }
 
 function uploadWithProgress(formData, onProgress) {
