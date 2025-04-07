@@ -566,7 +566,7 @@ async function uploadInChunks() {
   }
 
 
-  progressText.textContent = "✅ All batches uploaded successfully.";
+  progressText.textContent = "All batches uploaded successfully.";
   alert("All batches uploaded successfully.");
   fileInput.value = "";
   updateFileCount();
@@ -600,6 +600,14 @@ function uploadWithProgress(formData, onProgress) {
         xhr.send(formData);
     });
 }
+
+window.addEventListener('beforeunload', function(event) {
+  const progress = document.getElementById("uploadProgress");
+  if (progress && progress.value < 100 && progress.value > 0) {
+    event.preventDefault();
+    event.returnValue = 'Are you sure you want to leave? The current upload will be canceled if the page is reloaded';
+  }
+});
 
 
 async function fetchLowProbCount() {
