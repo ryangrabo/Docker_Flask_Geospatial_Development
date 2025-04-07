@@ -218,7 +218,9 @@
   <div class="sidebar">
       <h2>Menu</h2>
       <button onclick="location.href='/exportData'">Export Data</button>
-      <button onclick="location.href='/runInference'">Run Inference</button>
+       <!-- <button onclick="location.href='/runInference'">Run Inference</button>-->
+       <p id="lowProbNotice">Checking for low probability images...</p>
+      <button onclick="location.href='/getLowProbImages'">Manual Identification for Low Probability</button>
       <h3>Select files to upload</h3>
 <button onclick="document.getElementById('fileInput').click()">Choose Files</button>
 <h3>Or drag and drop</h3>
@@ -226,9 +228,11 @@
 <input type="file" id="fileInput" name="file" multiple style="display: none;">
 <p id="fileCount">Files to Upload: 0</p>
 <button id="uploadButton">Upload Images</button>
+<div id="progressText" style="text-align: center; margin-top: 8px;"></div>
+<progress id="uploadProgress" value="0" max="100" style="width: 100%;"></progress>
 
     </div>
-   
+ 
     <!-- Main Content with map -->
     <!-- <div class="main-content">
       <div id="map"></div>
@@ -379,7 +383,7 @@
         `;
         //add into popupcontent if you want
         // <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
-            //<p><strong>Yaw:</strong> ${props.yaw ? props.yaw + "°" : "N/A"}</p>
+            //<p><strong>Yaw:</strong> ${props.yaw ? props.yaw + "°getLowProbImages" : "N/A"}</p>
             new mapboxgl.Popup()
                 .setLngLat(coordinates)
                 .setHTML(popupContent)
@@ -448,45 +452,6 @@ function updateFileCount() {
     fileCountElement.innerText = `Files to Upload: ${fileInput.files.length}`;
 }
 
-async function upload() {
-    let formData = new FormData();
-    let fileInput = document.getElementById("fileInput");
-    let files = fileInput.files;
-
-    if (files.length === 0) {
-        alert("No files selected. Please choose images first.");
-        return;
-    }
-
-    for (let i = 0; i < files.length; i++) {
-        formData.append("file", files[i]);
-    }
-
-    try {
-        // upload
-        let response = await fetch("/upload_images", {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.statusText}`);
-        }
-
-        let saveData = await response.json();
-        alert("Upload Results: " + saveData.message);
-
-        fileInput.value = "";
-        updateFileCount(); // Refresh file count display
-
-        updateMapMarkers();
-
-    } catch (error) {
-        console.error("Error processing images:", error);
-        alert("Failed to process images. Check console for details.");
-    }
-}
-
 
 document.getElementById("uploadButton").addEventListener("click", function(event) {
     event.preventDefault();
@@ -538,76 +503,129 @@ function drop(ev) {
 
 document.getElementById("fileInput").addEventListener("change", updateFileCount);
 
-const MAX_BATCH_SIZE = 5 * 1024 * 1024 * 1024; // 5GB in bytes
+const MAX_BATCH_SIZE = 1 * 1024 * 1024 * 1024; // 1GB in bytes
 
 async function uploadInChunks() {
-    const fileInput = document.getElementById("fileInput");
-    const files = Array.from(fileInput.files);
+  const fileInput = document.getElementById("fileInput");
+  const files = Array.from(fileInput.files);
 
-    if (files.length === 0) {
-        alert("Please select files first.");
-        return;
-    }
+  if (files.length === 0) {
+      alert("Please select files first.");
+      return;
+  }
 
-    // Divide files into chunks
-    let batches = [];
-    let currentBatch = [];
-    let currentSize = 0;
+  // Divide files into chunks
+  let batches = [];
+  let currentBatch = [];
+  let currentSize = 0;
 
-    for (const file of files) {
-        if (file.size > MAX_BATCH_SIZE) {
-            alert(`File "${file.name}" exceeds 5GB and cannot be uploaded.`);
-            return;
-        }
+  for (const file of files) {
+      if (file.size > MAX_BATCH_SIZE) {
+          alert(`File "${file.name}" exceeds 5GB and cannot be uploaded.`);
+          return;
+      }
 
-        if (currentSize + file.size > MAX_BATCH_SIZE) {
-            batches.push(currentBatch);
-            currentBatch = [];
-            currentSize = 0;
-        }
+      if (currentSize + file.size > MAX_BATCH_SIZE) {
+          batches.push(currentBatch);
+          currentBatch = [];
+          currentSize = 0;
+      }
 
-        currentBatch.push(file);
-        currentSize += file.size;
-    }
+      currentBatch.push(file);
+      currentSize += file.size;
+  }
 
-    if (currentBatch.length > 0) {
-        batches.push(currentBatch);
-    }
+  if (currentBatch.length > 0) {
+      batches.push(currentBatch);
+  }
 
-    // Upload each batch sequentially
-    for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        const formData = new FormData();
+  // Upload each batch sequentially
+  const progressBar = document.getElementById("uploadProgress");
+  const progressText = document.getElementById("progressText");
 
-        for (const file of batch) {
-            formData.append("file", file);
-        }
+  for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const formData = new FormData();
 
-        try {
-            console.log(`Uploading batch ${i + 1} of ${batches.length}...`);
-            const response = await fetch("/upload_images", {
-                method: "POST",
-                body: formData
-            });
+      for (const file of batch) {
+          formData.append("file", file);
+      }
 
-            if (!response.ok) {
-                throw new Error(`Upload failed for batch ${i + 1}`);
-            }
+      try {
+          await uploadWithProgress(formData, percent => {
+              progressBar.value = percent;
+              progressText.textContent = `Uploading batch ${i + 1} of ${batches.length}... ${percent}%`;
+          });
 
-            const result = await response.json();
-            console.log(`Batch ${i + 1}: ${result.message}`);
-        } catch (error) {
-            console.error(`Error uploading batch ${i + 1}:`, error);
-            alert(`Error uploading batch ${i + 1}. Check console.`);
-            return;
-        }
-    }
+          console.log(`Batch ${i + 1} uploaded successfully.`);
+      } catch (error) {
+          console.error(`Batch ${i + 1} failed:`, error);
+          alert(`Error uploading batch ${i + 1}`);
+          return;
+      }
+  }
 
-    alert("All batches uploaded successfully.");
-    fileInput.value = "";
-    updateFileCount();
-    updateMapMarkers();
+
+  progressText.textContent = "✅ All batches uploaded successfully.";
+  alert("All batches uploaded successfully.");
+  fileInput.value = "";
+  updateFileCount();
+  updateMapMarkers();
 }
+
+function uploadWithProgress(formData, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload_images", true);
+
+        xhr.upload.onprogress = function (event) {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                onProgress(percent);
+            }
+        };
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                resolve(JSON.parse(xhr.responseText));
+            } else {
+                reject(new Error("Upload failed"));
+            }
+        };
+
+        xhr.onerror = function () {
+            reject(new Error("Upload error"));
+        };
+
+        xhr.send(formData);
+    });
+}
+
+
+async function fetchLowProbCount() {
+    try {
+        const response = await fetch('/numLowProbimages');
+        if (!response.ok) {
+            throw new Error('Failed to fetch low probability image count.');
+        }
+
+        const data = await response.json();
+        const count = data.num_low_prob;
+
+        const notice = document.getElementById('lowProbNotice');
+        if (count > 0) {
+            notice.innerHTML = `<strong>${count}</strong> low confidence images available.`;
+        } else {
+            notice.innerHTML = "No low confidence images to review.";
+        }
+    } catch (error) {
+        console.error("Error fetching low probability image count:", error);
+        document.getElementById('lowProbNotice').innerText = "Error checking low probability images.";
+    }
+}
+
+// Call it on load
+fetchLowProbCount();
 
   </script>
 </body>
