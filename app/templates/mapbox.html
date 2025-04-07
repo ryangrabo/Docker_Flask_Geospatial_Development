@@ -601,6 +601,16 @@ function uploadWithProgress(formData, onProgress) {
     });
 }
 
+window.addEventListener('beforeunload', function(event) {
+      // Check if form has unsaved data
+      const percent = Math.round((event.loaded / event.total) * 100);
+      if (percent < 100) {
+        // Prevent default action (navigation)
+        event.preventDefault();
+        // Provide a message to the user
+        event.returnValue = 'Are you sure you want to leave? You have unsaved data being uploaded.';
+      }
+    });
 
 async function fetchLowProbCount() {
     try {
