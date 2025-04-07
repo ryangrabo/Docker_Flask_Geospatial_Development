@@ -506,11 +506,13 @@ document.getElementById("fileInput").addEventListener("change", updateFileCount)
 const MAX_BATCH_SIZE = 1 * 1024 * 1024 * 1024; // 1GB in bytes
 
 async function uploadInChunks() {
+  document.getElementById("uploadButton").disabled = true;
   const fileInput = document.getElementById("fileInput");
   const files = Array.from(fileInput.files);
 
   if (files.length === 0) {
       alert("Please select files first.");
+      document.getElementById("uploadButton").disabled = false;
       return;
   }
 
@@ -522,6 +524,7 @@ async function uploadInChunks() {
   for (const file of files) {
       if (file.size > MAX_BATCH_SIZE) {
           alert(`File "${file.name}" exceeds 5GB and cannot be uploaded.`);
+          document.getElementById("uploadButton").disabled = false;
           return;
       }
 
@@ -550,7 +553,6 @@ async function uploadInChunks() {
       for (const file of batch) {
           formData.append("file", file);
       }
-
       try {
           await uploadWithProgress(formData, percent => {
               progressBar.value = percent;
@@ -561,12 +563,13 @@ async function uploadInChunks() {
       } catch (error) {
           console.error(`Batch ${i + 1} failed:`, error);
           alert(`Error uploading batch ${i + 1}`);
+          document.getElementById("uploadButton").disabled = false;
           return;
       }
   }
 
-
-  progressText.textContent = "All batches uploaded successfully.";
+  document.getElementById("uploadButton").disabled = false;
+  progressText.textContent = "✅ All batches uploaded successfully.";
   alert("All batches uploaded successfully.");
   fileInput.value = "";
   updateFileCount();
