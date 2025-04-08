@@ -158,10 +158,10 @@ def images_table():
         "file_id": doc["properties"]["file_id"], 
         "narrowleaf_prob":doc["properties"]["narrowleaf_cattail_prob"],
         "none_prob":doc["properties"]["none_prob"],
-        "phragmites_prob":["properties"]["phragmites_prob"],
-        "purple_prob":["properties"]["purple_loosestrife_prob"],
-        "lat":["geometry"]["lat"],
-        "lon":["gemoetry"]["lon"]} for doc in docs]
+        "phragmites_prob":doc["properties"]["phragmites_prob"],
+        "purple_prob":doc["properties"]["purple_loosestrife_prob"],
+        "lat":doc["geometry"]["lat"],
+        "lon":doc["gemoetry"]["lon"]} for doc in docs]
 
     return render_template("table.html", images=images)
 
