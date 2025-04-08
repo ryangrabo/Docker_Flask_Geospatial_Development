@@ -160,8 +160,8 @@ def images_table():
         "none_prob":doc["properties"]["none_prob"],
         "phragmites_prob":doc["properties"]["phragmites_prob"],
         "purple_prob":doc["properties"]["purple_loosestrife_prob"],
-        "lat":doc["geometry"]["coordinates"]["1"],
-        "lon":doc["geometry"]["coordinates"]["0"]} for doc in docs]
+        "lat":doc["geometry"]["coordinates"][1],
+        "lon":doc["geometry"]["coordinates"][0]} for doc in docs]
 
     return render_template("table.html", images=images)
 
