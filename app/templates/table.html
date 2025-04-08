@@ -195,6 +195,13 @@
     .close:hover {
       color: black;
     }
+
+    td, th {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
   </style>
 </head>
 <body>
@@ -224,18 +231,18 @@
             </tr>
         </thead>
         <tbody>
-            {% for image in images %}
-            <tr style="text-align: center;">
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ image.filename }}</td>
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ "%.3f"|format(image.narrowleaf_prob) }}</td>
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ "%.5f"|format(image.none_prob) }}</td>
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ "%.5f"|format(image.phragmites_prob) }}</td>
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ "%.5f"|format(image.purple_prob) }}</td>
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lat }}</td>
-                <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lon }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>        
+          {% for image in images %}
+          <tr>
+              <td>{{ image.filename }}</td>
+              <td>{{ "%.3f"|format(image.narrowleaf_prob) }}</td>
+              <td>{{ "%.5f"|format(image.none_prob) }}</td>
+              <td>{{ "%.5f"|format(image.phragmites_prob) }}</td>
+              <td>{{ "%.5f"|format(image.purple_prob) }}</td>
+              <td>{{ image.lat }}</td>
+              <td>{{ image.lon }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
         </table>
         {% else %}
         <p style="text-align:center;">Images to review.</p>
