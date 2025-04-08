@@ -56,13 +56,6 @@
       text-align: center;
     }
 
-    #lowprob-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      margin-top: 20px;
-    }
-
     .image-container {
       background-color: #fff;
       padding: 10px;
@@ -119,9 +112,6 @@
     }
 
     @media (max-width: 1024px) {
-      #lowprob-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
       .main-content {
         margin-left: 220px;
       }
@@ -145,12 +135,6 @@
       .sidebar button {
         width: 90%;
         margin: 5px 0;
-      }
-    }
-
-    @media (max-width: 600px) {
-      #lowprob-grid {
-        grid-template-columns: repeat(1, 1fr);
       }
     }
 
@@ -210,7 +194,6 @@
     <h2>Menu</h2>
     <button onclick="location.href='/'">Back to Map</button>
     <button onclick="openReferenceModal()">Show Reference Images</button>
-    <p id="lowProbNotice">Checking for low probability images...</p>
   </div>
 
   <!-- Main Content -->
@@ -233,7 +216,11 @@
         <tbody>
           {% for image in images %}
           <tr>
-              <td>{{ image.filename }}</td>
+              <td>
+                <a href="#" onclick="showPreview('/getImage/{{ image.file_id }}'); return false;">
+                  {{ image.filename }}
+                </a>
+              </td>
               <td>{{ "%.3f"|format(image.narrowleaf_prob) }}</td>
               <td>{{ "%.5f"|format(image.none_prob) }}</td>
               <td>{{ "%.5f"|format(image.phragmites_prob) }}</td>
@@ -288,53 +275,35 @@
   </div>
 </div>
 
-
+<div id="imagePreviewModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeImagePreview()">&times;</span>
+    <img id="previewImage" src="" alt="Image preview" style="max-width: 90%; border-radius: 8px;" />
+  </div>
+</div>
 
   <script>
-    async function fetchLowProbCount() {
-      try {
-        const response = await fetch('/numLowProbimages');
-        const data = await response.json();
-        const count = data.num_low_prob;
-        const notice = document.getElementById('lowProbNotice');
-
-        if (count > 0) {
-          notice.innerHTML = `<strong>${count}</strong> low confidence images left`;
-        } else {
-          notice.innerHTML = "No low confidence images to review.";
-        }
-      } catch (err) {
-        document.getElementById('lowProbNotice').innerText = "Error checking low probability images.";
-        console.error(err);
-      }
-    }
 
     function showPreview(imageUrl) {
-      const modal = document.createElement("div");
-      modal.style.position = "fixed";
-      modal.style.top = "0";
-      modal.style.left = "0";
-      modal.style.width = "100%";
-      modal.style.height = "100%";
-      modal.style.background = "rgba(0, 0, 0, 0.8)";
-      modal.style.display = "flex";
-      modal.style.alignItems = "center";
-      modal.style.justifyContent = "center";
-      modal.style.zIndex = "1000";
+        const modal = document.getElementById('imagePreviewModal');
+        const previewImg = document.getElementById('previewImage');
+        previewImg.src = imageUrl;
+        modal.style.display = 'block';
+      }
 
-      const img = document.createElement("img");
-      img.src = imageUrl;
-      img.style.maxWidth = "90%";
-      img.style.maxHeight = "90%";
-      img.style.border = "5px solid white";
-      img.style.borderRadius = "8px";
+      function closeImagePreview() {
+        const modal = document.getElementById('imagePreviewModal');
+        const previewImg = document.getElementById('previewImage');
+        previewImg.src = '';  // Clear image source to stop download
+        modal.style.display = 'none';
+      }
 
-      modal.appendChild(img);
-      document.body.appendChild(modal);
-
-      modal.onclick = function () {
-        document.body.removeChild(modal);
-      };
+      // Optional: close modal when clicking outside of it
+      window.onclick = function(event) {
+        const modal = document.getElementById('imagePreviewModal');
+        if (event.target == modal) {
+          closeImagePreview();
+        }
     }
 
     function openReferenceModal() {
@@ -353,7 +322,6 @@
       }
     }
 
-    fetchLowProbCount();
   </script>
 </body>
 </html>
