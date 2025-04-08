@@ -208,26 +208,37 @@
 
   <!-- Main Content -->
   <div class="main-content">
-    <h1>Categorize Low Probability Images</h1>
+    <h1>Results Table</h1>
 
     {% if images %}
-    <div id="lowprob-grid">
-      {% for image in images %}
-      <div class="image-container">
-        <div class="buttons">
-          <form method="POST" action="{{ url_for('main.categorize_images') }}">
-            <input type="hidden" name="filename" value="{{ image.filename }}">
-            <button type="submit" name="category" value="phragmites" class="category-btn">Phragmites</button>
-            <button type="submit" name="category" value="narrowleaf_cattail" class="category-btn">Narrowleaf Cattail</button>
-            <button type="submit" name="category" value="purple_loosestrife" class="category-btn">Purple Loosestrife</button>
-            <button type="submit" name="category" value="none" class="category-btn">Native Plant</button>
-          </form>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-      <p style="text-align:center;">No low probability images to review.</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff;">
+        <thead style="background-color: #333; color: white;">
+            <tr>
+            <th style="padding: 10px; border: 1px solid #ccc;">Filename</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">Narrowleaf Cattail Prob</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">None Prob</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">Phragmites Prob</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">Purple Loosestrife Prob</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">Latitude</th>
+            <th style="padding: 10px; border: 1px solid #ccc;">Longitude</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for image in images %}
+            <tr style="text-align: center;">
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.filename }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.narrowleaf_prob }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.none_prob }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.phragmites_prob }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.purple_prob }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lat }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lon }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center;">Images to review.</p>
     {% endif %}
 
     <a href="{{ url_for('main.index') }}">&larr; Back to Map</a>
