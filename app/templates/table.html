@@ -226,10 +226,10 @@
         <tbody>
             {% for image in images %}
             <tr style="text-align: center;">
-            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.filename | round(5) }}</td>
-            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.narrowleaf_prob | round(5) }}</td>
-            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.none_prob | round(5) }}</td>
-            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.phragmites_prob | round(5) }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.filename }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.narrowleaf_prob }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.none_prob }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.phragmites_prob }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ image.purple_prob }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lat }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lon }}</td>
