@@ -195,10 +195,10 @@
     <button onclick="location.href='/'">Back to Map</button>
     <button onclick="openReferenceModal()">Show Reference Images</button>
     <form method="GET" action="{{ url_for('main.images_table') }}" style="margin-bottom: 20px;">
-        <label><input type="checkbox" name="class" value="Narrowleaf Cattail" {% if 'Narrowleaf Cattail' in selected_classes %}checked{% endif %}> Narrowleaf Cattail</label>
-        <label><input type="checkbox" name="class" value="Native" {% if 'Native' in selected_classes %}checked{% endif %}> Native</label>
-        <label><input type="checkbox" name="class" value="Phragmites" {% if 'Phragmites' in selected_classes %}checked{% endif %}> Phragmites</label>
-        <label><input type="checkbox" name="class" value="Purple Loosestrife" {% if 'Purple Loosestrife' in selected_classes %}checked{% endif %}> Purple Loosestrife</label>
+        <div><label><input type="checkbox" name="class" value="Narrowleaf Cattail" {% if 'Narrowleaf Cattail' in selected_classes %}checked{% endif %}> Narrowleaf Cattail</label></div>
+        <div><label><input type="checkbox" name="class" value="Native" {% if 'Native' in selected_classes %}checked{% endif %}> Native</label></div>
+        <div><label><input type="checkbox" name="class" value="Phragmites" {% if 'Phragmites' in selected_classes %}checked{% endif %}> Phragmites</label></div>
+        <div><label><input type="checkbox" name="class" value="Purple Loosestrife" {% if 'Purple Loosestrife' in selected_classes %}checked{% endif %}> Purple Loosestrife</label></div>
         <button type="submit">Filter</button>
     </form>
   </div>

@@ -147,8 +147,19 @@ def images_table():
         flash("Please log in to access this page.")
         return redirect(url_for("auth.login"))
     
+    # Map the human-readable class names to database values
+    class_mapping = {
+        "Narrowleaf Cattail": "narrowleaf_cattail",
+        "Native": "none",  # 'none' is stored in the database as 'Native'
+        "Phragmites": "phragmites",
+        "Purple Loosestrife": "purple_loosestrife"
+    }
+
     # Get the selected classes from the URL query parameters
     selected_classes = request.args.getlist('class')  # List of selected classes from the checkboxes
+
+    # Convert the selected class names to database field names
+    db_classes = [class_mapping.get(class_name) for class_name in selected_classes if class_name in class_mapping]
 
     # Connect to MongoDB
     client = connect_to_mongodb()
@@ -157,8 +168,8 @@ def images_table():
 
     # Build the query to filter by predicted class
     query = {}
-    if selected_classes:
-        query['properties.predicted_class'] = {"$in": selected_classes}
+    if db_classes:
+        query['properties.predicted_class'] = {"$in": db_classes}
 
     # Find the filtered documents
     docs = collection.find(query, {"_id": 0})
