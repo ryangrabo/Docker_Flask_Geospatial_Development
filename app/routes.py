@@ -2,7 +2,6 @@ import os       # I use this for working with the file system and environment va
 import logging  # I use this for debugging and tracking what's happening in the code
 import base64   # I use this for encoding/decoding data to and from Base64
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, send_file, abort, Flask, Response, redirect, flash, session  # I use these Flask utilities for creating views, rendering templates, sending files, etc.
-from sympy import true # Used for detecting checkbox selection
 from werkzeug.utils import secure_filename  # I use this to safely handle filenames when uploading
 from pymongo import MongoClient  # I use this to connect to MongoDB databases
 import pymongo  # I use this for additional MongoDB functionality when needed

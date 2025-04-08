@@ -527,7 +527,6 @@ document.getElementById("uploadButton").addEventListener("click", function(event
 function updateMapMarkers() {
     if (map.getSource('images')) {
         filterMarkers()
-        // map.getSource('images').setData('/images');
     } else {
         addMarkers();
         filterMarkers();
