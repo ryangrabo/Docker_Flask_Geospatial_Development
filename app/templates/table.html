@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Inference Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin-left: 270px;
+            padding: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            height: 100%;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #333;
+            padding-top: 20px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+        }
+
+        .sidebar button {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: none;
+            background-color: #555;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar button:hover {
+            background-color: #777;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            body {
+                margin-left: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Menu</h2>
+        <button onclick="location.href='/'">Back to Map</button>
+    </div>
+
+    <div class="main-content">
+        <h1>Inference Results</h1>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Predicted Class</th>
+                    <th>Class 1 Prob</th>
+                    <th>Class 2 Prob</th>
+                    <th>Class 3 Prob</th>
+                    <th>Class 4 Prob</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for image in images %}
+                <tr>
+                    <td>{{ image.filename }}</td>
+                    <td>{{ image.predicted_class }}</td>
+                    <td>{{ image.probabilities[0] | round(3) }}</td>
+                    <td>{{ image.probabilities[1] | round(3) }}</td>
+                    <td>{{ image.probabilities[2] | round(3) }}</td>
+                    <td>{{ image.probabilities[3] | round(3) }}</td>
+                    <td>{{ image.latitude }}</td>
+                    <td>{{ image.longitude }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
