@@ -6,10 +6,7 @@ import torch.nn as nn
 # --- Load your trained model ---
 model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
 custom_yolo = YOLO(model_path)
-custom_model = custom_yolo.model  # This is the actual nn.Module
-
-# --- Load the regular YOLOv11 model ---
-baseline_model = YOLO('yolov11').model
+custom_model = custom_yolo.model  # nn.Module object
 
 # --- Function to collect Conv2d layers ---
 def get_conv_weights(model):
@@ -19,15 +16,10 @@ def get_conv_weights(model):
             conv_dict[name] = module.weight.detach().clone()
     return conv_dict
 
-# --- Get weights for both models ---
+# --- Get Conv2d layers ---
 custom_convs = get_conv_weights(custom_model)
-baseline_convs = get_conv_weights(baseline_model)
 
-# --- Compare weights ---
-print("\n🔍 Modified Conv Layers:")
-for name in custom_convs:
-    if name in baseline_convs:
-        if not torch.equal(custom_convs[name], baseline_convs[name]):
-            print(f"Layer '{name}' has changed.")
-    else:
-        print(f"Layer '{name}' not found in baseline model (possibly custom added).")
+# --- Print out the Conv2d layers and their shapes ---
+print("\n Conv2d Layers in Custom Model:")
+for name, weight in custom_convs.items():
+    print(f"{name}: {tuple(weight.shape)}")
