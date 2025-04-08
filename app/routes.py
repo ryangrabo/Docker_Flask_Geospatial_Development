@@ -146,13 +146,24 @@ def images_table():
     if "user" not in session:
         flash("Please log in to access this page.")
         return redirect(url_for("auth.login"))
-
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
 
-    images = list(collection.find({}, {"_id": 0}))
-    return render_template("images_table.html", images=images)
+    # Find all documents where low_prob == "1"
+    docs = collection.find({}, {"_id": 0})
+
+    # Extract filenames for rendering
+    images = [{"filename": doc["properties"]["filename"],
+        "file_id": doc["properties"]["file_id"], 
+        "narrowleaf_prob":doc["properties"]["narrowleaf_cattail_prob"],
+        "none_prob":doc["properties"]["none_prob"],
+        "phragmites_prob":["properties"]["phragmites_prob"],
+        "purple_prob":["properties"]["purple_loosestrife_prob"],
+        "lat":["geometry"]["lat"],
+        "lon":["gemoetry"]["lon"]} for doc in docs]
+
+    return render_template("table.html", images=images)
 
 
 @bp.route('/getLowProbImages', methods=["GET"])
