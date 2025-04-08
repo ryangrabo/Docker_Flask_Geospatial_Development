@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Categorize Low Probability Images</title>
+  <title>Results Table</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -194,12 +194,13 @@
     <h2>Menu</h2>
     <button onclick="location.href='/'">Back to Map</button>
     <button onclick="openReferenceModal()">Show Reference Images</button>
-    <div id="classFilters" style="margin-bottom: 10px;">
-      <div><label><input type="checkbox" value="Narrowleaf Cattail" checked onchange="filterTable()"> Narrowleaf Cattail</label></div>
-      <div><label><input type="checkbox" value="Native" checked onchange="filterTable()"> Native</label></div>
-      <div><label><input type="checkbox" value="Phragmites" checked onchange="filterTable()"> Phragmites</label></div>
-      <div><label><input type="checkbox" value="Purple Loosestrife" checked onchange="filterTable()"> Purple Loosestrife</label></div>
-    </div>    
+    <form method="GET" action="{{ url_for('main.images_table') }}" style="margin-bottom: 20px;">
+        <label><input type="checkbox" name="class" value="Narrowleaf Cattail" {% if 'Narrowleaf Cattail' in selected_classes %}checked{% endif %}> Narrowleaf Cattail</label>
+        <label><input type="checkbox" name="class" value="Native" {% if 'Native' in selected_classes %}checked{% endif %}> Native</label>
+        <label><input type="checkbox" name="class" value="Phragmites" {% if 'Phragmites' in selected_classes %}checked{% endif %}> Phragmites</label>
+        <label><input type="checkbox" name="class" value="Purple Loosestrife" {% if 'Purple Loosestrife' in selected_classes %}checked{% endif %}> Purple Loosestrife</label>
+        <button type="submit">Filter</button>
+    </form>
   </div>
 
   <!-- Main Content -->
@@ -328,26 +329,6 @@
       if (event.target === modal) {
         closeReferenceModal();
       }
-    }
-
-    function filterTable() {
-      const checkboxes = document.querySelectorAll('#classFilters input[type="checkbox"]');
-      const activeFilters = Array.from(checkboxes)
-                                .filter(cb => cb.checked)
-                                .map(cb => cb.value);
-      
-      const rows = document.querySelectorAll('table tbody tr');
-      
-      rows.forEach(row => {
-          const predictedClassCell = row.cells[1];
-          const predictedClass = predictedClassCell.innerText.trim();
-
-          if (activeFilters.includes(predictedClass)) {
-              row.style.display = '';
-          } else {
-              row.style.display = 'none';
-          }
-      });
     }
 
   </script>

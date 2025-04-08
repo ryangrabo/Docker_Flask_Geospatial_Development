@@ -141,30 +141,43 @@ def upload_images():
     return jsonify({"error": "No valid results to save"}), 400
 
 
-@bp.route('/images_table')
+@bp.route('/images_table', methods=['GET', 'POST'])
 def images_table():
     if "user" not in session:
         flash("Please log in to access this page.")
         return redirect(url_for("auth.login"))
+    
+    # Get the selected classes from the URL query parameters
+    selected_classes = request.args.getlist('class')  # List of selected classes from the checkboxes
+
+    # Connect to MongoDB
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
 
-    # Find all documents where low_prob == "1"
-    docs = collection.find({}, {"_id": 0})
+    # Build the query to filter by predicted class
+    query = {}
+    if selected_classes:
+        query['properties.predicted_class'] = {"$in": selected_classes}
 
-    # Extract filenames for rendering
-    images = [{"filename": doc["properties"]["filename"],
-        "file_id": doc["properties"]["file_id"],
-        "predicted_class":doc["properties"]["predicted_class"], 
-        "narrowleaf_prob":doc["properties"]["narrowleaf_cattail_prob"],
-        "none_prob":doc["properties"]["none_prob"],
-        "phragmites_prob":doc["properties"]["phragmites_prob"],
-        "purple_prob":doc["properties"]["purple_loosestrife_prob"],
-        "lat":doc["geometry"]["coordinates"][1],
-        "lon":doc["geometry"]["coordinates"][0]} for doc in docs]
+    # Find the filtered documents
+    docs = collection.find(query, {"_id": 0})
 
-    return render_template("table.html", images=images)
+    # Extract the data for rendering
+    images = [{
+        "filename": doc["properties"]["filename"],
+        "file_id": doc["properties"]["file_id"], 
+        "predicted_class": doc["properties"]["predicted_class"].replace("none", "Native"),
+        "narrowleaf_prob": doc["properties"]["narrowleaf_cattail_prob"],
+        "none_prob": doc["properties"]["none_prob"],
+        "phragmites_prob": doc["properties"]["phragmites_prob"],
+        "purple_prob": doc["properties"]["purple_loosestrife_prob"],
+        "lat": doc["geometry"]["coordinates"][1],
+        "lon": doc["geometry"]["coordinates"][0]
+    } for doc in docs]
+
+    return render_template("table.html", images=images, selected_classes=selected_classes)
+
 
 
 @bp.route('/getLowProbImages', methods=["GET"])
