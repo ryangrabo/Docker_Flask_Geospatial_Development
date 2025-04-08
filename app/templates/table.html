@@ -205,6 +205,7 @@
         <thead style="background-color: #333; color: white;">
             <tr>
                 <th style="padding: 10px; border: 1px solid #ccc;">Filename</th>
+                <th style="padding: 10px; border: 1px solid #ccc;">Predicted Class</th>
                 <th style="padding: 10px; border: 1px solid #ccc; background-color: rgb(26, 131, 5);">Narrowleaf Cattail Probability</th>
                 <th style="padding: 10px; border: 1px solid #ccc; background-color: black;">Native Probability</th>
                 <th style="padding: 10px; border: 1px solid #ccc; background-color: rgb(117, 107, 12);">Phragmites Probability</th>
@@ -221,6 +222,7 @@
                   {{ image.filename }}
                 </a>
               </td>
+              <td>{{ image.predicted_class }}</td>
               <td>{{ "%.3f"|format(image.narrowleaf_prob) }}</td>
               <td>{{ "%.5f"|format(image.none_prob) }}</td>
               <td>{{ "%.5f"|format(image.phragmites_prob) }}</td>

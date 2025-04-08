@@ -155,7 +155,8 @@ def images_table():
 
     # Extract filenames for rendering
     images = [{"filename": doc["properties"]["filename"],
-        "file_id": doc["properties"]["file_id"], 
+        "file_id": doc["properties"]["file_id"],
+        "predicted_class":doc["properties"]["predicted_class"], 
         "narrowleaf_prob":doc["properties"]["narrowleaf_cattail_prob"],
         "none_prob":doc["properties"]["none_prob"],
         "phragmites_prob":doc["properties"]["phragmites_prob"],
