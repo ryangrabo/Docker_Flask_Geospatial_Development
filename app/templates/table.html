@@ -212,7 +212,7 @@
 
     {% if images %}
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff;">
-        <thead>
+        <thead style="background-color: #333; color: white;">
             <tr>
                 <th style="padding: 10px; border: 1px solid #ccc;">Filename</th>
                 <th style="padding: 10px; border: 1px solid #ccc; background-color: rgb(26, 131, 5);">Narrowleaf Cattail Probability</th>
@@ -226,11 +226,11 @@
         <tbody>
             {% for image in images %}
             <tr style="text-align: center;">
-            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.filename }}</td>
-            <td>{{ image.narrowleaf_prob | round(5) }}</td>
-            <td>{{ image.none_prob | round(5) }}</td>
-            <td>{{ image.phragmites_prob | round(5) }}</td>
-            <td>{{ image.purple_prob | round(5) }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.filename | round(5) }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.narrowleaf_prob | round(5) }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.none_prob | round(5) }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.phragmites_prob | round(5) }}</td>
+            <td style="padding: 10px; border: 1px solid #ccc;">{{ image.purple_prob }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lat }}</td>
             <td style="padding: 10px; border: 1px solid #ccc;">{{ image.lon }}</td>
             </tr>
