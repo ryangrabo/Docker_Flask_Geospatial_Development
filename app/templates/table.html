@@ -194,6 +194,12 @@
     <h2>Menu</h2>
     <button onclick="location.href='/'">Back to Map</button>
     <button onclick="openReferenceModal()">Show Reference Images</button>
+    <div id="classFilters" style="margin-bottom: 10px;">
+      <label><input type="checkbox" value="Narrowleaf Cattail" checked onchange="filterTable()"> Narrowleaf Cattail</label>
+      <label><input type="checkbox" value="Native" checked onchange="filterTable()"> Native</label>
+      <label><input type="checkbox" value="Phragmites" checked onchange="filterTable()"> Phragmites</label>
+      <label><input type="checkbox" value="Purple Loosestrife" checked onchange="filterTable()"> Purple Loosestrife</label>
+    </div>    
   </div>
 
   <!-- Main Content -->
@@ -222,7 +228,7 @@
                   {{ image.filename }}
                 </a>
               </td>
-              <td>{{ image.predicted_class }}</td>
+              <td>{{ "Native" if image.predicted_class == "none" else image.predicted_class }}</td>
               <td>{{ "%.3f"|format(image.narrowleaf_prob) }}</td>
               <td>{{ "%.5f"|format(image.none_prob) }}</td>
               <td>{{ "%.5f"|format(image.phragmites_prob) }}</td>
@@ -322,6 +328,26 @@
       if (event.target === modal) {
         closeReferenceModal();
       }
+    }
+
+    function filterTable() {
+      const checkboxes = document.querySelectorAll('#classFilters input[type="checkbox"]');
+      const activeFilters = Array.from(checkboxes)
+                                .filter(cb => cb.checked)
+                                .map(cb => cb.value);
+      
+      const rows = document.querySelectorAll('table tbody tr');
+      
+      rows.forEach(row => {
+          const predictedClassCell = row.cells[1];
+          const predictedClass = predictedClassCell.innerText.trim();
+
+          if (activeFilters.includes(predictedClass)) {
+              row.style.display = '';
+          } else {
+              row.style.display = 'none';
+          }
+      });
     }
 
   </script>
