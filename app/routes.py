@@ -2,6 +2,7 @@ import os       # I use this for working with the file system and environment va
 import logging  # I use this for debugging and tracking what's happening in the code
 import base64   # I use this for encoding/decoding data to and from Base64
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, send_file, abort, Flask, Response, redirect, flash, session  # I use these Flask utilities for creating views, rendering templates, sending files, etc.
+from sympy import true # Used for detecting checkbox selection
 from werkzeug.utils import secure_filename  # I use this to safely handle filenames when uploading
 from pymongo import MongoClient  # I use this to connect to MongoDB databases
 import pymongo  # I use this for additional MongoDB functionality when needed
@@ -32,7 +33,7 @@ COLLECTION_NAME = "sendAndRecievePlantInfoTest"
 #file storage system for mongo
 client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
-fs = gridfs.GridFS(db)  
+fs = gridfs.GridFS(db)
 
 # Offsets for drone error:
 LATITUDE_OFFSET = 0.00004
@@ -73,6 +74,30 @@ def get_images():
         "type": "FeatureCollection",
         "features": list(collection.find({}, {"_id": 0}))  # Exclude MongoDB's _id
     }
+
+    return jsonify(geojson_data)
+
+
+@bp.route('/filterImages/<checkString>', methods=["GET"])
+def filterImages(checkString):
+    if "user" not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+
+    """Fetches image data from MongoDB and returns it directly as GeoJSON."""
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
+
+    # Turn passed string into list of classes
+    classList = checkString.split(",")
+    logging.info(f"Classes selected: {classList}")
+
+    # Directly return the entire collection as a GeoJSON FeatureCollection
+    featureList = list(collection.find({"properties.predicted_class": {'$in': classList}}, {"_id": 0}))
+    geojson_data = { "type": "FeatureCollection", "features": featureList }
+    
+    logging.info(f"Completed feature list: {geojson_data}")
 
     return jsonify(geojson_data)
 

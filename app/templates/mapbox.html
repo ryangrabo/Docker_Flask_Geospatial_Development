@@ -63,6 +63,7 @@
       left: 0;
       background-color: #333;
       padding-top: 20px;
+      padding-bottom: 20px;
       color: white;
       display: flex;
       flex-direction: column;
@@ -162,7 +163,7 @@
         left: 210px;
         right: auto;
         width: 210px;
-        top: 0;
+        top: 10;
         padding: 10px;
     }
 
@@ -170,7 +171,7 @@
         left: 210px;
         right: auto;
         width: 210px;
-        top: 0;
+        top: 120;
         padding: 10px;
     }
 
@@ -229,14 +230,15 @@
   
    <!-- Filtering Options -->
   <div class="filter-controls">
-    <input type="checkbox" id="sel_All" name="sel_All" value="all_plants">
-    <label for="sel_all">All</label><br>
-    <input type="checkbox" id="sel_narrowleaf" name="sel_narrowleaf" value="narrowleaf">
+    <input type="checkbox" checked="checked" id="sel_native" value="none" onchange="filterMarkers()">
+    <label for="sel_native">Native</label><br>
+    <input type="checkbox" checked="checked" id="sel_narrowleaf" value="narrowleaf_cattail" onchange="filterMarkers()">
     <label for="sel_narrowleaf">Narrowleaf Cattail</label><br>
-    <input type="checkbox" id="sel_phragmites" name="sel_phragmites" value="phragmites">
+    <input type="checkbox" checked="checked" id="sel_phragmites" value="phragmites" onchange="filterMarkers()">
     <label for="sel_phragmites">Phragmites</label><br>
-    <input type="checkbox" id="sel_loosestrife" name="sel_loosestrife" value="loosestrife">
+    <input type="checkbox" checked="checked" id="sel_loosestrife" value="purple_loosestrife" onchange="filterMarkers()">
     <label for="sel_loosestrife">Purple Loosestrife</label><br>
+
   </div>
  
  <!-- Map Controls -->
@@ -272,6 +274,7 @@
       <div id="map"></div>
     </div> -->
   <script>
+
     const mapboxToken = "{{ mapbox_token }}";
     mapboxgl.accessToken = mapboxToken;
 
@@ -362,16 +365,6 @@
           'icon-size': currentImageSize / 80  // Adjust size dynamically
         }
       });
-      // map.addLayer({
-      //   id: 'unclustered-point',
-      //   type: 'symbol',
-      //   source: 'images',
-      //   filter: ['!', ['has', 'point_count']],
-      //   layout: {
-      //     'icon-image': 'marker-15', // Default Mapbox marker icon
-      //     'icon-size': currentImageSize / 50  // Adjust scaling based on slider value
-      //   }
-      // });
 
       // Zoom into clusters when clicked.
       map.on('click', 'clusters', function (e) {
@@ -531,14 +524,27 @@ document.getElementById("uploadButton").addEventListener("click", function(event
     uploadInChunks();
 });
 
-
-
 function updateMapMarkers() {
     if (map.getSource('images')) {
-        map.getSource('images').setData('/images');
+        filterMarkers()
+        // map.getSource('images').setData('/images');
     } else {
         addMarkers();
+        filterMarkers();
     }
+}
+
+function filterMarkers() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const selectedValues = [];
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedValues.push(checkbox.value);
+        }
+    });
+    const checkString = selectedValues.toString();
+
+    map.getSource('images').setData(`/filterImages/${checkString}`)
 }
 
 function previewFiles() {
