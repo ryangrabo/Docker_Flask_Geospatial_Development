@@ -97,75 +97,6 @@ def get_image(file_id):
         return jsonify({"error": f"Image not found: {str(e)}"}), 404
 
 
-
-@bp.route("/runInference", methods=["GET", "POST"])
-def run_inference():
-    if "user" not in session:
-                flash("Please log in to access this page.")
-                return redirect(url_for("auth.login"))
-
-    if request.method == "GET":
-        return render_template("runInference.html")
-
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in request"}), 400
-
-    files = request.files.getlist("file")  # Handle multiple files
-
-    if not files:
-        return jsonify({"error": "No files selected"}), 400
-
-    results_list = []
-    start_time = time.perf_counter()
-
-    for file in files:
-        if file.filename == "":
-            continue
-
-        if not file or not allowed_file(file.filename):
-            continue
-        
-        filename = secure_filename(file.filename)
-
-        # Save file to MongoDB GridFS
-        file_id = fs.put(file, filename=filename)
-        logging.info(f"Saved to MongoDB with ID: {file_id}")
-
-        # Retrieve the image from MongoDB
-        retrieved_file = fs.get(file_id)
-        image_data = np.array(Image.open(BytesIO(retrieved_file.read())))  # Convert to NumPy array
-        image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
-        
-        # Run YOLO inference
-        results = model.predict(image_data, stream=True, verbose=False)
-
-        for result in results:
-            top_index = result.probs.top1  # Get top prediction index
-            top_class = result.names[top_index]  # Get class name
-            probabilities = result.probs.data.tolist()  # Get probabilities
-            total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
-
-            results_list.append({
-                "total_inference_time": total_inference,
-                "filename": filename,
-                "predicted_class": top_class,
-                "narrowleaf_cattail_prob": probabilities[0],
-                "none_prob": probabilities[1],
-                "phragmites_prob": probabilities[2],
-                "purple_loosestrife_prob": probabilities[3],
-                "top_index": top_index,
-                "file_id": str(file_id)  # Store MongoDB file ID
-            })
-
-    end_time = time.perf_counter()
-    elapsed_time = round(end_time - start_time, 4)
-
-    return jsonify({
-        "results": results_list,
-        "elapsed_time": elapsed_time
-    })
-
-
 @bp.route("/upload_images", methods=["POST"])
 def upload_images():
     if "user" not in session:
@@ -209,120 +140,56 @@ def upload_images():
 
     return jsonify({"error": "No valid results to save"}), 400
 
-        
 
-    
-
-@bp.route("/saveResults", methods=["POST"])
-def save_results():
+@bp.route('/images_table', methods=['GET', 'POST'])
+def images_table():
     if "user" not in session:
-             flash("Please log in to access this page.")
-             return redirect(url_for("auth.login"))
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
     
+    # Map the human-readable class names to database values
+    class_mapping = {
+        "Narrowleaf Cattail": "narrowleaf_cattail",
+        "Native": "none",  # 'none' is stored in the database as 'Native'
+        "Phragmites": "phragmites",
+        "Purple Loosestrife": "purple_loosestrife"
+    }
+
+    # Get the selected classes from the URL query parameters
+    selected_classes = request.args.getlist('class')  # List of selected classes from the checkboxes
+
+    # Convert the selected class names to database field names
+    db_classes = [class_mapping.get(class_name) for class_name in selected_classes if class_name in class_mapping]
+
+    # Connect to MongoDB
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
 
-    data = request.json
-    results = data.get("results", [])
+    # Build the query to filter by predicted class
+    query = {}
+    if db_classes:
+        query['properties.predicted_class'] = {"$in": db_classes}
 
-    if not results:
-        return jsonify({"error": "No results provided"}), 400
+    # Find the filtered documents
+    docs = collection.find(query, {"_id": 0})
 
-    geojson_results = []
+    # Extract the data for rendering
+    images = [{
+        "filename": doc["properties"]["filename"],
+        "file_id": doc["properties"]["file_id"], 
+        "predicted_class": doc["properties"]["predicted_class"].replace("none", "Native"),
+        "narrowleaf_prob": doc["properties"]["narrowleaf_cattail_prob"],
+        "none_prob": doc["properties"]["none_prob"],
+        "phragmites_prob": doc["properties"]["phragmites_prob"],
+        "purple_prob": doc["properties"]["purple_loosestrife_prob"],
+        "lat": doc["geometry"]["coordinates"][1],
+        "lon": doc["geometry"]["coordinates"][0]
+    } for doc in docs]
 
-    for result in results:
-        try:
-            # Ensure `result` is a valid dictionary
-            if not isinstance(result, dict):
-                logging.warning(f"Skipping invalid result entry: {result}")
-                continue  # Skip invalid entries
-
-            file_id = result.get("file_id")
-            if not file_id:
-                logging.warning(f"Skipping result due to missing file_id: {result}")
-                continue  # Skip this entry
-
-            # Retrieve image file from MongoDB GridFS
-            try:
-                retrieved_file = fs.get(ObjectId(file_id))
-            except Exception as e:
-                logging.error(f"File not found in MongoDB for file_id: {file_id}, Error: {e}")
-                continue  # Skip if file retrieval fails
-
-            file_bytes = retrieved_file.read()
-
-            # Extract EXIF metadata
-            stream = BytesIO(file_bytes)
-            tags = exifread.process_file(stream, details=False)
-
-            # Extract GPS data
-            lat, lon = None, None
-            try:
-                if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
-                    lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
-                    lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
-                    lat = lat - LATITUDE_OFFSET if lat is not None else None
-                    lon = lon - LONGITUDE_OFFSET if lon is not None else None
-            except Exception as e:
-                logging.error(f"GPS extraction failed for file_id {file_id}: {e}")
-
-            # Extract image direction (yaw) if available
-            yaw = "Unknown"
-            try:
-                if 'GPS GPSImgDirection' in tags:
-                    direction = tags['GPS GPSImgDirection'].values[0]
-                    yaw = float(direction.num) / float(direction.den)
-            except Exception:
-                yaw = "Unknown"
-
-            # Extract altitude (meters) if available
-            altitude_meters = None
-            try:
-                if 'GPS GPSAltitude' in tags:
-                    altitude = tags['GPS GPSAltitude'].values[0]
-                    altitude_meters = float(altitude.num) / float(altitude.den)
-            except Exception:
-                altitude_meters = None
-
-            # Ensure geometry is valid
-            geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
-
-            # Create GeoJSON formatted result
-            geojson_results.append({
-                "type": "Feature",
-                "properties": {
-                    "filename": result.get("filename", "Unknown"),
-                    "predicted_class": result.get("predicted_class", "Unknown"),
-                    #"total_inference_time": result.get("total_inference_time", 0),
-                    "narrowleaf_cattail_prob": result.get("narrowleaf_cattail_prob", 0),
-                    "none_prob": result.get("none_prob", 0),
-                    "phragmites_prob": result.get("phragmites_prob", 0),
-                    "purple_loosestrife_prob": result.get("purple_loosestrife_prob", 0),
-                    "file_id": file_id,
-                    "yaw": yaw,
-                    "msl_alt": altitude_meters,
-                },
-                "geometry": geometry
-            })
-
-        except Exception as e:
-            logging.error(f"Unexpected error processing file (file_id unknown): {e}")
-
-    # Save results in MongoDB
-    if geojson_results:
-        inserted_ids = collection.insert_many(geojson_results).inserted_ids
-        return jsonify({"message": f"Saved {len(inserted_ids)} results to the database"})
-
-    return jsonify({"error": "No valid results to save"}), 400
+    return render_template("table.html", images=images, selected_classes=selected_classes)
 
 
-@bp.route("/exportData")
-def export_Data():
-    if "user" not in session:
-             flash("Please log in to access this page.")
-             return redirect(url_for("auth.login"))
-    return render_template("exportData.html")
 
 @bp.route('/getLowProbImages', methods=["GET"])
 def get_low_prob_images_html():
