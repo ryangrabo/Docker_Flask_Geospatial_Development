@@ -176,7 +176,7 @@ def process_images():
 
             for doc in query_results:
                 id = str(doc["_id"])
-                logging.info(f"To be processed: Object ID: {id}")
+                #logging.info(f"To be processed: Object ID: {id}")
                 process_image(id)
             
             #continue to next iteration instead of waiting, because there may be more images then were found in the initial query

@@ -90,13 +90,13 @@ def filterImages(checkString):
 
     # Turn passed string into list of classes
     classList = checkString.split(",")
-    logging.info(f"Classes selected: {classList}")
+    #logging.info(f"Classes selected: {classList}")
 
     # Directly return the entire collection as a GeoJSON FeatureCollection
     featureList = list(collection.find({"properties.predicted_class": {'$in': classList}}, {"_id": 0}))
     geojson_data = { "type": "FeatureCollection", "features": featureList }
     
-    logging.info(f"Completed feature list: {geojson_data}")
+    #logging.info(f"Completed feature list: {geojson_data}")
 
     return jsonify(geojson_data)
 
