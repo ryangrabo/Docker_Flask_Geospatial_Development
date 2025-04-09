@@ -23,10 +23,10 @@ logging.basicConfig(level=logging.INFO)
 
 WAIT_INTERVAL=1
 
-# Offsets for drone error:
-LATITUDE_OFFSET = 0.00004
-LONGITUDE_OFFSET = 0.00
-AGL_OFFSET_FEET = -10  # Adjust to make AGL values ~20 feet
+# # Offsets for drone error:
+# LATITUDE_OFFSET = 0.00004
+# LONGITUDE_OFFSET = 0.00
+# AGL_OFFSET_FEET = -10  # Adjust to make AGL values ~20 feet
 
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
@@ -92,32 +92,33 @@ def process_image(file_id):
         if 'GPS GPSLatitude' in tags and 'GPS GPSLongitude' in tags:
             lat = convert_to_degrees(tags['GPS GPSLatitude'], tags.get('GPS GPSLatitudeRef'))
             lon = convert_to_degrees(tags['GPS GPSLongitude'], tags.get('GPS GPSLongitudeRef'))
-            lat = lat - LATITUDE_OFFSET if lat is not None else None
-            lon = lon - LONGITUDE_OFFSET if lon is not None else None
+            # lat = lat - LATITUDE_OFFSET if lat is not None else None
+            # lon = lon - LONGITUDE_OFFSET if lon is not None else None
     except Exception as e:
         logging.error(f"GPS extraction failed for file_id {file_id}: {e}")
 
-    # Extract image direction (yaw) if available
-    yaw = "Unknown"
-    try:
-        if 'GPS GPSImgDirection' in tags:
-            direction = tags['GPS GPSImgDirection'].values[0]
-            yaw = float(direction.num) / float(direction.den)
-    except Exception:
-        yaw = "Unknown"
+    # # Extract image direction (yaw) if available
+    # yaw = "Unknown"
+    # try:
+    #     if 'GPS GPSImgDirection' in tags:
+    #         direction = tags['GPS GPSImgDirection'].values[0]
+    #         yaw = float(direction.num) / float(direction.den)
+    # except Exception:
+    #     yaw = "Unknown"
 
-    # Extract altitude (meters) if available
-    altitude_meters = None
-    try:
-        if 'GPS GPSAltitude' in tags:
-            altitude = tags['GPS GPSAltitude'].values[0]
-            altitude_meters = float(altitude.num) / float(altitude.den)
-    except Exception:
-        altitude_meters = None
+    # # Extract altitude (meters) if available
+    # altitude_meters = None
+    # try:
+    #     if 'GPS GPSAltitude' in tags:
+    #         altitude = tags['GPS GPSAltitude'].values[0]
+    #         altitude_meters = float(altitude.num) / float(altitude.den)
+    # except Exception:
+    #     altitude_meters = None
 
     # Ensure geometry is valid
     geometry = {"type": "Point", "coordinates": [lon, lat]} if lat is not None and lon is not None else None
-    total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
+    # total_inference = result.speed['inference']+result.speed['preprocess']+result.speed['postprocess']
+    
     # Create GeoJSON formatted result
     geojson_result = {
         "type": "Feature",
@@ -130,8 +131,8 @@ def process_image(file_id):
             "purple_loosestrife_prob": probabilities[3],
             "low_prob": low_prob,
             "file_id": str(file_id),
-            "yaw": yaw,
-            "msl_alt": altitude_meters,
+            # "yaw": yaw,
+            # "msl_alt": altitude_meters,
             # "total_inference": total_inference,
             # "inference": result.speed['inference'],
             # "preprocess": result.speed['preprocess'],
