@@ -96,7 +96,7 @@ def get_image(file_id):
              return redirect(url_for("auth.login"))
     
     #file storage system for mongo
-    client = MongoClient(MONGO_URI)  # Connect to MongoDB
+    client = connect_to_mongodb()  # Connect to MongoDB
     db = client[DATABASE_NAME]  # Get database instance
     fs = gridfs.GridFS(db)
 
