@@ -23,21 +23,8 @@ threading.Thread(target=process_images, daemon=True).start()
 
 bp = Blueprint("main", __name__)
 
-# Use the Docker service name when running inside Docker
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://0.0.0.0:27017/")
-
 DATABASE_NAME = "seniorDesignTesting"
 COLLECTION_NAME = "sendAndRecievePlantInfoTest"
-
-#file storage system for mongo
-client = MongoClient(MONGO_URI)  # Connect to MongoDB
-db = client[DATABASE_NAME]  # Get database instance
-fs = gridfs.GridFS(db)
-
-# Offsets for drone error:
-LATITUDE_OFFSET = 0.00004
-LONGITUDE_OFFSET = 0.00
-AGL_OFFSET_FEET = -10  # Adjust to make AGL values ~20 feet
 
 #load model
 model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
@@ -45,8 +32,6 @@ model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
 
-
-#MAPBOX
 
 @bp.route("/", endpoint="index")
 def index():
@@ -59,11 +44,11 @@ def index():
 
 @bp.route('/images')
 def get_images():
+    """Fetches image data from MongoDB and returns it directly as GeoJSON."""
     if "user" not in session:
         flash("Please log in to access this page.")
         return redirect(url_for("auth.login"))
 
-    """Fetches image data from MongoDB and returns it directly as GeoJSON."""
     client = connect_to_mongodb()
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
@@ -108,6 +93,12 @@ def get_image(file_id):
     if "user" not in session:
              flash("Please log in to access this page.")
              return redirect(url_for("auth.login"))
+    
+    #file storage system for mongo
+    client = connect_to_mongodb  # Connect to MongoDB
+    db = client[DATABASE_NAME]  # Get database instance
+    fs = gridfs.GridFS(db)
+
     try:
         # Convert file_id from string to ObjectId
         file_object_id = ObjectId(file_id)
@@ -135,9 +126,11 @@ def upload_images():
     if not files:
         return jsonify({"error": "No files selected"}), 400
 
-    client = connect_to_mongodb()
-    db = client[DATABASE_NAME]
-    collection = db[COLLECTION_NAME]
+    #file storage system for mongo
+    client = connect_to_mongodb()  # Connect to MongoDB
+    db = client[DATABASE_NAME]  # Get database instance
+    fs = gridfs.GridFS(db)
+
     inserted_count=0
     start_time = time.perf_counter()
 
