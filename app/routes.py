@@ -32,6 +32,7 @@ model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
 
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
 @bp.route("/", endpoint="index")
 def index():
@@ -95,7 +96,7 @@ def get_image(file_id):
              return redirect(url_for("auth.login"))
     
     #file storage system for mongo
-    client = connect_to_mongodb  # Connect to MongoDB
+    client = MongoClient(MONGO_URI)  # Connect to MongoDB
     db = client[DATABASE_NAME]  # Get database instance
     fs = gridfs.GridFS(db)
 
