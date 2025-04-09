@@ -33,10 +33,22 @@
       text-align: center;
       font-family: 'Open Sans', sans-serif;
     }
-     .controls {
+    .map-controls {
+      position: absolute;
+      top: 120px;
+      left: 210px;
+      width: 210px;
+      z-index: 1;
+      background-color: white;
+      padding: 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .filter-controls {
       position: absolute;
       top: 10px;
       left: 210px;
+      width: 210px;
       z-index: 1;
       background-color: white;
       padding: 10px;
@@ -44,18 +56,19 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     } 
     .sidebar {
-    height: 100%;
-    width: 200px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: #333;
-    padding-top: 20px;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+      height: 100%;
+      width: 200px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-color: #333;
+      padding-top: 20px;
+      padding-bottom: 20px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
 .sidebar h2 {
     text-align: center;
@@ -90,7 +103,11 @@
       margin-left: 270px;
       padding: 10px;
     }
-    .controls button {
+    .map-controls button {
+      margin: 2px;
+      padding: 5px 10px;
+    }
+    .filter-controls button {
       margin: 2px;
       padding: 5px 10px;
     }
@@ -142,16 +159,24 @@
         margin-left: 220px;
     }
 
-    .controls {
-        left: 220px;
+    .filter-controls {
+        left: 210px;
         right: auto;
-        width: calc(100% - 220px);
-        top: 0;
+        width: 210px;
+        top: 10;
+        padding: 10px;
+    }
+
+    .map-controls {
+        left: 210px;
+        right: auto;
+        width: 210px;
+        top: 120;
         padding: 10px;
     }
 
     #map {
-        height: calc(100vh - 120px); /* make space for controls */
+        height: 100vh; /* make space for map-controls */
     }
 }
 
@@ -175,7 +200,16 @@
         padding: 10px;
     }
 
-    .controls {
+    .filter-controls {
+        position: relative;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin-top: 10px;
+        z-index: 2;
+    }
+
+    .map-controls {
         position: relative;
         left: 0;
         top: 0;
@@ -185,7 +219,7 @@
     }
 
     #map {
-        height: 60vh;
+        height: 70vh;
     }
 }
 
@@ -193,17 +227,22 @@
 </head>
 <body>
  <div id="map"></div>
-  <!-- <div class="controls">
-    <div>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/light-v10')">Light</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/dark-v10')">Dark</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-v9')">Satellite</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/satellite-streets-v11')">Satellite Streets</button>
-      <button onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
-    </div>
-  </div> -->
-  <div class="controls">
+  
+   <!-- Filtering Options -->
+  <div class="filter-controls">
+    <input type="checkbox" checked="checked" id="sel_native" value="none" onchange="filterMarkers()">
+    <label for="sel_native">Native</label><br>
+    <input type="checkbox" checked="checked" id="sel_narrowleaf" value="narrowleaf_cattail" onchange="filterMarkers()">
+    <label for="sel_narrowleaf">Narrowleaf Cattail</label><br>
+    <input type="checkbox" checked="checked" id="sel_phragmites" value="phragmites" onchange="filterMarkers()">
+    <label for="sel_phragmites">Phragmites</label><br>
+    <input type="checkbox" checked="checked" id="sel_loosestrife" value="purple_loosestrife" onchange="filterMarkers()">
+    <label for="sel_loosestrife">Purple Loosestrife</label><br>
+
+  </div>
+ 
+ <!-- Map Controls -->
+  <div class="map-controls">
     <label for="mapStyle">Map Style:</label>
     <select id="mapStyle" onchange="setMapStyle(this.value)">
       <option value="mapbox://styles/mapbox/streets-v11">Streets</option>
@@ -213,7 +252,8 @@
       <option value="mapbox://styles/mapbox/satellite-streets-v11">Satellite Streets</option>
       <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
     </select>
-  </div>  
+  </div>
+
 <!-- Sidebar (same style as runInference page) -->
   <div class="sidebar">
       <h2>Menu</h2>
@@ -238,6 +278,7 @@
       <div id="map"></div>
     </div> -->
   <script>
+
     const mapboxToken = "{{ mapbox_token }}";
     mapboxgl.accessToken = mapboxToken;
 
@@ -328,16 +369,6 @@
           'icon-size': currentImageSize / 80  // Adjust size dynamically
         }
       });
-      // map.addLayer({
-      //   id: 'unclustered-point',
-      //   type: 'symbol',
-      //   source: 'images',
-      //   filter: ['!', ['has', 'point_count']],
-      //   layout: {
-      //     'icon-image': 'marker-15', // Default Mapbox marker icon
-      //     'icon-size': currentImageSize / 50  // Adjust scaling based on slider value
-      //   }
-      // });
 
       // Zoom into clusters when clicked.
       map.on('click', 'clusters', function (e) {
@@ -458,14 +489,26 @@ document.getElementById("uploadButton").addEventListener("click", function(event
     uploadInChunks();
 });
 
-
-
 function updateMapMarkers() {
     if (map.getSource('images')) {
-        map.getSource('images').setData('/images');
+        filterMarkers()
     } else {
         addMarkers();
+        filterMarkers();
     }
+}
+
+function filterMarkers() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const selectedValues = [];
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedValues.push(checkbox.value);
+        }
+    });
+    const checkString = selectedValues.toString();
+
+    map.getSource('images').setData(`/filterImages/${checkString}`)
 }
 
 function previewFiles() {

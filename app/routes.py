@@ -32,7 +32,7 @@ COLLECTION_NAME = "sendAndRecievePlantInfoTest"
 #file storage system for mongo
 client = MongoClient(MONGO_URI)  # Connect to MongoDB
 db = client[DATABASE_NAME]  # Get database instance
-fs = gridfs.GridFS(db)  
+fs = gridfs.GridFS(db)
 
 # Offsets for drone error:
 LATITUDE_OFFSET = 0.00004
@@ -73,6 +73,30 @@ def get_images():
         "type": "FeatureCollection",
         "features": list(collection.find({}, {"_id": 0}))  # Exclude MongoDB's _id
     }
+
+    return jsonify(geojson_data)
+
+
+@bp.route('/filterImages/<checkString>', methods=["GET"])
+def filterImages(checkString):
+    if "user" not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for("auth.login"))
+
+    """Fetches image data from MongoDB and returns it directly as GeoJSON."""
+    client = connect_to_mongodb()
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
+
+    # Turn passed string into list of classes
+    classList = checkString.split(",")
+    logging.info(f"Classes selected: {classList}")
+
+    # Directly return the entire collection as a GeoJSON FeatureCollection
+    featureList = list(collection.find({"properties.predicted_class": {'$in': classList}}, {"_id": 0}))
+    geojson_data = { "type": "FeatureCollection", "features": featureList }
+    
+    logging.info(f"Completed feature list: {geojson_data}")
 
     return jsonify(geojson_data)
 
