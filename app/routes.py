@@ -206,20 +206,19 @@ def images_table():
 
     return render_template("table.html", images=images, selected_classes=selected_classes)
 
-@bp.route('/export_excel', methods=['POST'])
-def export_excel():
+@bp.route('/download_excel', methods=['GET'])
+def download_excel():
     if "user" not in session:
-        flash("Please log in to export data.")
+        flash("Please log in.")
         return redirect(url_for("auth.login"))
 
-    filename = fetch_and_save_excel()  # This generates the Excel file
-    if filename == None:
-        logging.error("File unable to be generated")
-    else:
-        logging.info("file generated")
+    filename = fetch_and_save_excel()
+    if filename is None:
+        flash("Error generating file.")
+        return redirect(url_for("main.images_table"))
 
-    flash("Excel file has been generated.")
-    return redirect(url_for("main.images_table"))
+    return send_file(filename, as_attachment=True)
+
 
 
 @bp.route('/getLowProbImages', methods=["GET"])

@@ -201,9 +201,9 @@
         <div><label><input type="checkbox" name="class" value="Purple Loosestrife" {% if 'Purple Loosestrife' in selected_classes %}checked{% endif %}> Purple Loosestrife</label></div>
         <button type="submit">Filter</button>
         <div>
-          <form method="POST" action="{{ url_for('main.export_excel') }}">
-            <button type="submit">Download Excel File</button>
-          </form>
+          <a href="{{ url_for('main.download_excel') }}">
+            <button type="button">Download Excel</button>
+          </a>          
         </div>        
     </form>
   </div>
