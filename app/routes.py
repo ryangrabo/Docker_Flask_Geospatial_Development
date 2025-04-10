@@ -212,7 +212,8 @@ def download_excel():
         flash("Please log in.")
         return redirect(url_for("auth.login"))
 
-    filename = fetch_and_save_excel()
+    output_filename = os.path.join("app", "MongoDB_Data_Test.xlsx")
+    filename = fetch_and_save_excel(output_filename)
     if filename is None:
         flash("Error generating file.")
         return redirect(url_for("main.images_table"))
