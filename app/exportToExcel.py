@@ -62,7 +62,7 @@ def fetch_nothing(file_ids):
     return images
 
 
-def fetch_and_save_excel(output_filename="MongoDB_Data_Test.xlsx"):
+def fetch_and_save_excel(output_filename="app/MongoDB_Data_Test.xlsx"):
     """Fetches data from MongoDB, cleans it, retrieves images, and saves it as an Excel file."""
     try:
         # Fetch data
