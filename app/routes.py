@@ -17,7 +17,7 @@ import gridfs  # storing and retrieving the images in MongoDB
 from app.utils import convert_to_degrees, allowed_file, connect_to_mongodb
 import threading
 from app.process_images import process_images
-import app.exportToExcel as exportToExcel
+from app.exportToExcel import fetch_and_save_excel
 
 #create worker to query DB regularly and check for unprocessed images:
 threading.Thread(target=process_images, daemon=True).start()
@@ -212,7 +212,11 @@ def export_excel():
         flash("Please log in to export data.")
         return redirect(url_for("auth.login"))
 
-    exportToExcel()  # This is your function that generates the Excel file
+    filename = fetch_and_save_excel()  # This generates the Excel file
+    if filename == None:
+        logging.error("File unable to be generated")
+    else:
+        logging.info("file generated")
 
     flash("Excel file has been generated.")
     return redirect(url_for("main.images_table"))
