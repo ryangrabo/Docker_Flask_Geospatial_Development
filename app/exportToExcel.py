@@ -6,13 +6,14 @@ from io import BytesIO
 import xlsxwriter
 from PIL import Image
 from bson import ObjectId
-
+from app.utils import connect_to_mongodb
 # MongoDB Connection
-MONGO_URI = "mongodb://localhost:27017/"  # Change if needed
+# MONGO_URI = "mongodb://localhost:27017/"  # Change if needed
 DATABASE_NAME = "seniorDesignTesting"
 COLLECTION_NAME = "sendAndRecievePlantInfoTest"
 
-client = MongoClient(MONGO_URI)
+#client = MongoClient(MONGO_URI)
+client = connect_to_mongodb()
 db = client[DATABASE_NAME]
 col = db[COLLECTION_NAME]
 fs = GridFS(db)  # GridFS for image retrieval

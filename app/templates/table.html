@@ -200,6 +200,11 @@
         <div><label><input type="checkbox" name="class" value="Phragmites" {% if 'Phragmites' in selected_classes %}checked{% endif %}> Phragmites</label></div>
         <div><label><input type="checkbox" name="class" value="Purple Loosestrife" {% if 'Purple Loosestrife' in selected_classes %}checked{% endif %}> Purple Loosestrife</label></div>
         <button type="submit">Filter</button>
+        <div>
+          <a href="{{ url_for('main.download_excel') }}">
+            <button type="button">Download Excel</button>
+          </a>          
+        </div>        
     </form>
   </div>
 

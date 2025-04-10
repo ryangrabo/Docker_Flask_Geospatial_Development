@@ -17,6 +17,7 @@ import gridfs  # storing and retrieving the images in MongoDB
 from app.utils import convert_to_degrees, allowed_file, connect_to_mongodb
 import threading
 from app.process_images import process_images
+from app.exportToExcel import fetch_and_save_excel
 
 #create worker to query DB regularly and check for unprocessed images:
 threading.Thread(target=process_images, daemon=True).start()
@@ -31,8 +32,6 @@ model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")
 model = YOLO(model_path)  # Load the model
 
 logging.basicConfig(level=logging.INFO)
-
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
 @bp.route("/", endpoint="index")
 def index():
@@ -206,6 +205,20 @@ def images_table():
     } for doc in docs]
 
     return render_template("table.html", images=images, selected_classes=selected_classes)
+
+@bp.route('/download_excel', methods=['GET'])
+def download_excel():
+    if "user" not in session:
+        flash("Please log in.")
+        return redirect(url_for("auth.login"))
+
+    output_filename = os.path.join(os.getcwd(), "app/" "MongoDB_Data_Test.xlsx")
+    filename = fetch_and_save_excel(output_filename)
+    if filename is None:
+        flash("Error generating file.")
+        return redirect(url_for("main.images_table"))
+
+    return send_file(filename, as_attachment=True)
 
 
 
