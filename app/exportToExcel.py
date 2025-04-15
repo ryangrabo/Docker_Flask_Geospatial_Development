@@ -9,8 +9,8 @@ from bson import ObjectId
 from app.utils import connect_to_mongodb
 # MongoDB Connection
 # MONGO_URI = "mongodb://localhost:27017/"  # Change if needed
-DATABASE_NAME = "seniorDesignTesting"
-COLLECTION_NAME = "sendAndRecievePlantInfoTest"
+DATABASE_NAME = "InvasiveSpeciesDB"
+COLLECTION_NAME = "ImageProcessingResults"
 
 #client = MongoClient(MONGO_URI)
 client = connect_to_mongodb()

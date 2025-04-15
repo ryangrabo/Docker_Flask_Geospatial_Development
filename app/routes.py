@@ -24,8 +24,8 @@ threading.Thread(target=process_images, daemon=True).start()
 
 bp = Blueprint("main", __name__)
 
-DATABASE_NAME = "seniorDesignTesting"
-COLLECTION_NAME = "sendAndRecievePlantInfoTest"
+DATABASE_NAME = "InvasiveSpeciesDB"
+COLLECTION_NAME = "ImageProcessingResults"
 
 #load model
 model_path = os.path.join(os.getcwd(), "app", "single_model0.3.1.pt")

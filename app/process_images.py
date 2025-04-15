@@ -31,8 +31,8 @@ WAIT_INTERVAL=1
 # Use the Docker service name when running inside Docker
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 
-DATABASE_NAME = "seniorDesignTesting"
-COLLECTION_NAME = "sendAndRecievePlantInfoTest"
+DATABASE_NAME = "InvasiveSpeciesDB"
+COLLECTION_NAME = "ImageProcessingResults"
 
 #file storage system for mongo
 client = MongoClient(MONGO_URI)  # Connect to MongoDB
