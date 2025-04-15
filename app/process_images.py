@@ -78,9 +78,9 @@ def process_image(file_id):
 
     #low probability flag
     if probabilities[top_index] < .85 :
-        low_prob = 1
+        low_prob = True
     else :
-        low_prob = 0
+        low_prob = False
             
     # Extract EXIF metadata
     stream = BytesIO(file_bytes)
@@ -129,7 +129,7 @@ def process_image(file_id):
             "none_prob": probabilities[1],
             "phragmites_prob": probabilities[2],
             "purple_loosestrife_prob": probabilities[3],
-            "low_prob": low_prob,
+            "low_prob_flag": low_prob,
             "file_id": str(file_id),
             # "yaw": yaw,
             # "msl_alt": altitude_meters,

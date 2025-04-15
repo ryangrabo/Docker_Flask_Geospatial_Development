@@ -232,7 +232,7 @@ def get_low_prob_images_html():
     collection = db[COLLECTION_NAME]
 
     # Find all documents where low_prob == "1"
-    low_prob_docs = collection.find({"properties.low_prob": 1})
+    low_prob_docs = collection.find({"properties.low_prob_flag": True})
 
     # Extract filenames for rendering
     images = [{"filename": doc["properties"]["filename"],
@@ -250,7 +250,7 @@ def get_num_low_prob_images():
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
 
-    num_low_prob = collection.count_documents({"properties.low_prob": 1})
+    num_low_prob = collection.count_documents({"properties.low_prob_flag": True})
     logging.info(f"Found {num_low_prob} low_prob images.")
 
 
@@ -278,7 +278,7 @@ def categorize_images():
         {"properties.filename": filename},
         {"$set": {
             "properties.predicted_class": category,
-            "properties.low_prob": 0
+            "properties.low_prob_flag": False
         }}
     )
 
