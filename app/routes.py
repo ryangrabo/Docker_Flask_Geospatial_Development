@@ -289,7 +289,7 @@ def categorize_images():
 
     return redirect(url_for("main.get_low_prob_images_html"))
 
-@bp.route("/aboutUs", endpoint="index")
+@bp.route("/aboutUs")
 def about_us():
     if "user" not in session:
              flash("Please log in to access this page.")
