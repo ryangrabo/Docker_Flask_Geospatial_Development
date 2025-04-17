@@ -288,3 +288,12 @@ def categorize_images():
         logging.warning(f"No matching image found for {filename}")
 
     return redirect(url_for("main.get_low_prob_images_html"))
+
+@bp.route("/aboutUs", endpoint="index")
+def about_us():
+    if "user" not in session:
+             flash("Please log in to access this page.")
+             return redirect(url_for("auth.login"))
+    
+    # Render the about us page
+    return render_template("aboutus.html")
