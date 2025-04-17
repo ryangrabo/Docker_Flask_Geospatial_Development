@@ -263,5 +263,6 @@ def about_us():
     if "user" not in session:
              flash("Please log in to access this page.")
              return redirect(url_for("auth.login"))
-    """Render a simple landing page."""
-    return render_template("aboutus.html", mapbox_token=os.getenv("MAPBOX_TOKEN"))
+    
+    # Render the about us page
+    return render_template("aboutus.html")
