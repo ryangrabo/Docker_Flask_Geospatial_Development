@@ -259,7 +259,7 @@
       <h2>Menu</h2>
       <button onclick="location.href='/images_table'">Results in Table</button>
        <!-- <button onclick="location.href='/runInference'">Run Inference</button>-->
-       <p id="lowProbNotice">Checking for low probability images...</p>
+       <p style="text-align:center;" id="lowProbNotice">Checking for low probability images...</p>
       <button onclick="location.href='/getLowProbImages'">Manual Identification for Low Probability</button>
       <h3>Select files to upload</h3>
 <button onclick="document.getElementById('fileInput').click()">Choose Files</button>
@@ -404,15 +404,16 @@
         let popupContent = `<h3>${props.filename || "No Filename"}</h3>
           <p><strong>Latitude, Longitude:</strong> ${lat}, ${lon}</p>
           <p><strong>Predicted Class:</strong> ${props.predicted_class || "Unknown"}</p>
-          <p><strong>narrowleaf_cattail_prob:</strong> ${props.narrowleaf_cattail_prob.toFixed(2)|| "0"}</p>
-          <p><strong>none_prob:</strong> ${props.none_prob.toFixed(2)|| "0"}</p>
-          <p><strong>phragmites_prob:</strong> ${props.phragmites_prob.toFixed(2)|| "0"}</p>
-          <p><strong>purple_loosestrife_prob:</strong> ${props.purple_loosestrife_prob.toFixed(2)|| "0"}</p>
           <img src="/getImage/${props.file_id}" 
           alt="${props.filename}" 
           style="max-width: 200px; height: auto; display: block; margin: 10px auto; border-radius: 5px; cursor: pointer;" 
           onclick="showPreview('/getImage/${props.file_id}')">
         `;
+        //   <p><strong>narrowleaf_cattail_prob:</strong> ${props.narrowleaf_cattail_prob.toFixed(2)|| "0"}</p>
+        //   <p><strong>none_prob:</strong> ${props.none_prob.toFixed(2)|| "0"}</p>
+        //   <p><strong>phragmites_prob:</strong> ${props.phragmites_prob.toFixed(2)|| "0"}</p>
+        //   <p><strong>purple_loosestrife_prob:</strong> ${props.purple_loosestrife_prob.toFixed(2)|| "0"}</p>
+
         //add into popupcontent if you want
         // <p><strong>MSL Altitude:</strong> ${props.msl_alt ? props.msl_alt + " m" : "N/A"}</p>
             //<p><strong>Yaw:</strong> ${props.yaw ? props.yaw + "°getLowProbImages" : "N/A"}</p>
