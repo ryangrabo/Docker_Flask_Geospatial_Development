@@ -1,21 +1,49 @@
-## How to properly set up Docker Container (first time install)
-Some additional steps we need to consider since the last time we set up from scratch:
-- Download and install nvidia drivers, install nvidia-container-toolkit
-```console
-$ curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo | \
-  sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+# SETUP and Run
+## Install necessary dependencies:
+### Install docker
+Please note that docker desktop cannot be used on Linux, if you want to run the container with GPU acceleration.
+1. Follow the steps [here](https://docs.docker.com/engine/install/ubuntu/) (assuming Ubuntu installation):
+2. Verify that you can run the following command:
+```bash
+sudo docker run hello-world
 ```
-```console
-$ sudo dnf install -y nvidia-container-toolkit
-```
-```
-$ sudo nvidia-ctk runtime configure --runtime=docker
-```
-```console
-$ sudo systemctl restart docker
+3. Follow post-setup steps [here](https://docs.docker.com/engine/install/linux-postinstall/) to run containers without sudo.
+4. Verify that you can run the following command without sudo:
+```bash
+docker run hello-world
 ```
 
-- Create a .env file with the following keys (set them yourself):
+### Setup NVIDIA Driver
+1. Install the NVIDIA CUDA Driver [here](https://developer.nvidia.com/cuda-downloads).
+2. Verify that you can run the following command:
+```bash
+nvidia-smi
+```
+
+### Setup NVIDIA Container Toolkit and Configure Docker to recognize it
+1. Install NVIDIA container toolkit using apt [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian).
+2. Go further down in the guide [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker) to configure docker to recognize it. You only need to follow the initial steps to configure docker and restart docker engine. Setting up rootless mode or any further steps are unecessary.
+3. Verify that this command outputs NVIDIA runtime:
+```bash
+docker info | grep -i nvidia
+```
+Example output:
+```
+ Runtimes: io.containerd.runc.v2 nvidia runc
+```
+
+### Install mongodb
+1. Install MongoDB Community Server [here](https://www.mongodb.com/try/download/community-kubernetes-operator). Ensure that you select the correct platform.
+2. (optional) Install MongoDB Compass to view DB in GUI [here](https://www.mongodb.com/docs/compass/current/install/).
+
+## Clone Github and Build Container:
+### Clone Github:
+```bash
+git clone https://github.com/ryangrabo/Docker_Flask_Geospatial_Development
+```
+
+### Build container 
+1. Create a .env file with the following keys (set them yourself):
 ```
 FLASK_APP=
 FLASK_ENV=
@@ -28,7 +56,7 @@ AZURE_CLIENT_SECRET=
 AZURE_TENANT_ID=
 ```
 
-- In dockerfile, make sure lines 15-29 are formatted as follows (you do NOT need the wheels files for this to work!):
+2. In dockerfile, make sure lines 15-29 are formatted as follows (you do NOT need the wheels files for this to work!):
 
 ```
 # Copy requirements first for caching
@@ -47,4 +75,39 @@ RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://
 
 RUN pip install --no-cache-dir -r requirements.lock
 ```
+3. Build the Docker container:
+```bash
+docker compose up --build
+```
+View the website at [localhost:5000](http:/localhost:5000). Note that a PSU account is needed to access the website.
 
+## Done with setup! Some other useful commands:
+### Start/stop containers without rebuilding container:
+- Start
+```bash
+docker start mongodbtest
+docker start flask_app
+```
+- Stop
+```bash
+docker stop mongodbtest
+docker stop flask_app
+```
+### View running containers and logs
+- view running containers:
+```bash
+docker ps
+```
+- view all containers:
+```bash
+docker ps -a
+```
+- follow logs of a container:
+  - Database
+  ```bash
+  docker logs -f mongodbtest
+  ```
+  - Flask App
+  ```bash
+  docker logs -f flask_app
+  ```
