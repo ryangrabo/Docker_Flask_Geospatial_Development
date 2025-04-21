@@ -56,25 +56,13 @@ AZURE_CLIENT_SECRET=
 AZURE_TENANT_ID=
 ```
 
-2. In dockerfile, make sure lines 15-29 are formatted as follows (you do NOT need the wheels files for this to work!):
+2. Create wheels folder for large torchvision library:
 
+```bash
+mkdir wheels
+pip download torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 -d wheels
 ```
-# Copy requirements first for caching
-COPY requirements.txt ./
-COPY requirements.lock ./
 
-
-# Upgrade pip and install dependencies
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install -r requirements.txt
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-# COPY wheels/ /wheels/
-# RUN pip install --no-cache-dir /wheels/*
-
-RUN pip install --no-cache-dir -r requirements.lock
-```
 3. Build the Docker container:
 ```bash
 docker compose up --build
