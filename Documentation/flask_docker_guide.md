@@ -148,3 +148,27 @@ mongosh
 ```
 
 Find where it’s connected to and copy that connection string into MongoDB Compass.
+
+
+# Flow of Authentication
+
+## User clicks login (/login)
+- Generates a state token (CSRF protection).
+- Redirects user to Microsoft login.
+
+## User logs into Microsoft
+- If successful, Microsoft redirects to `/getAToken` with an authorization code.
+
+## Token exchange (/getAToken)
+- Verifies state token (CSRF protection).
+- Requests an access token from Azure.
+- Saves user session and redirects to the homepage.
+
+## Logout (/logout)
+- Clears session and redirects to Azure AD logout.
+
+# Security Considerations
+ **CSRF Protection:** Uses `state` parameter to prevent unauthorized login requests.  
+ **Session Handling:** Stores user info securely using Flask’s session.  
+ **Confidential Authentication:** Uses client secret, meaning it is suitable for server-side applications.  
+ **No Excessive Permissions:** `SCOPE = []`, meaning no personal user info is accessed.
