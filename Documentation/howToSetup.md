@@ -43,14 +43,12 @@ git clone https://github.com/ryangrabo/Docker_Flask_Geospatial_Development
 ```
 
 ### Build container 
-1. Create a .env file with the following keys (set them yourself):
+1. Create a .env file with the following keys (set th empty ones yourself):
 ```
 FLASK_APP=
 FLASK_ENV=
 SECRET_KEY=
-GMAPS_API_KEY=
 MAPBOX_TOKEN=
-AZUREMAP_TOKEN=
 AZURE_CLIENT_ID=
 AZURE_CLIENT_SECRET=
 AZURE_TENANT_ID=
