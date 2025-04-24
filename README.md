@@ -3,7 +3,6 @@
 
 ### Project Video:
 [![Classifying Invasive Species Using Drone Images and DL Video](https://github.com/ryangrabo/Docker_Flask_Geospatial_Development/blob/main/website.png)](https://www.youtube.com/watch?v=QqXstytqjmw)
-<img src="website.png" alt="Website capture" width="1000">
 
 ### About the Project:
 Aquatic invasive species of plants are spreading rapidly and harming local ecosystems, especially in areas like Presque Isle State Park, impacting over 70 acres in the area.
