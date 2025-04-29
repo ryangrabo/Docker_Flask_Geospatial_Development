@@ -62,10 +62,13 @@ def process_image(file_id):
         logging.error(f"Unable to access id {file_id}.\nError: {e}")
         return f"Unable to access id {file_id}.\nError: {e}"
     
-    file_bytes = retrieved_file.read()
-    image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
-    image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
-        
+    try:
+        file_bytes = retrieved_file.read()
+        image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
+        image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
+    except Exception as e:
+        logging.error(f"Unable to convert Object with ID: {file_id} to image_data. \nError: {e}") 
+        return f"Unable to convert Object with ID: {file_id} to image_data."
     # Run YOLO inference
     #result = model.predict(image_data, verbose=False)[0]
     result = model.predict(image_data, verbose=False, device=0)[0]
