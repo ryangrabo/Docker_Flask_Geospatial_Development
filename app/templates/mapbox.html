@@ -569,7 +569,7 @@ async function uploadInChunks() {
 
   for (const file of files) {
       if (file.size > MAX_BATCH_SIZE) {
-          alert(`File "${file.name}" exceeds 5GB and cannot be uploaded.`);
+          alert(`File "${file.name}" exceeds 1GB and cannot be uploaded.`);
           document.getElementById("uploadButton").disabled = false;
           return;
       }
