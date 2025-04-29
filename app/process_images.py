@@ -60,14 +60,16 @@ def process_image(file_id):
         retrieved_file = fs.get(ObjectId(file_id))
     except Exception as e:
         logging.error(f"Unable to access id {file_id}.\nError: {e}")
-        return f"Unable to access id {file_id}.\nError: {e}"
+        fs.delete(ObjectId(file_id))
+        return f"Unable to access id {file_id}. Deleting that object. \nError: {e}"
     
     try:
         file_bytes = retrieved_file.read()
         image_data = np.array(Image.open(BytesIO(file_bytes)))  # Convert to NumPy array
         image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR
     except Exception as e:
-        logging.error(f"Unable to convert Object with ID: {file_id} to image_data. \nError: {e}") 
+        logging.error(f"Unable to convert Object with ID: {file_id} to image_data. Deleting that object. \nError: {e}")
+        fs.delete(ObjectId(file_id))
         return f"Unable to convert Object with ID: {file_id} to image_data."
     # Run YOLO inference
     #result = model.predict(image_data, verbose=False)[0]
