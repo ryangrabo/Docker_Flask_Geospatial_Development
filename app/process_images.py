@@ -56,6 +56,7 @@ def process_image(file_id):
     """
     #first, check if the image is in image_db
     # Retrieve the image from MongoDB
+    start_time = time.time()
     try:
         retrieved_file = fs.get(ObjectId(file_id))
     except Exception as e:
@@ -159,7 +160,9 @@ def process_image(file_id):
     #     logging.warning(f"Failed to update metadata for file_id {file_id}")
     # else:
     #     logging.info(f"Marked file {file_id} as processed.")
-
+    end_time = time.time()
+    elapsed_time=end_time - start_time
+    logging.info(f"Took {elapsed_time:.2f} seconds to process.")
     if insert_result.inserted_id:
         logging.info(f"Saved results with id: {insert_result.inserted_id}")
         return f"Saved results with id: {insert_result.inserted_id}"
